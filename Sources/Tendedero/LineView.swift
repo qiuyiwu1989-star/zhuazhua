@@ -43,15 +43,7 @@ enum Layout {
     /// `scroll` brings older ones in from the left. Otherwise (a line hung
     /// on a wider screen) they move closer together so none is past the edge.
     static func x(index: Int, count: Int, width: CGFloat, visible: Int, scroll: CGFloat) -> CGFloat {
-        // Keep the original pitch; insert one reserved slot at the center.
-        let slotsPerSide = max(1, visible / 2)
-        let slot = CGFloat(index - max(0, count - visible)) + scroll / spacing
-        let split = CGFloat(slotsPerSide)
-        let edge = 76 + 24 + cardWidth / 2
-        if slot < split {
-            return width / 2 - edge - (split - 1 - slot) * spacing
-        }
-        return width / 2 + edge + (slot - split) * spacing
+        photoX(index: index, count: count, width: width, visible: visible, scroll: scroll)
     }
 
     private static func photoX(index: Int, count: Int, width: CGFloat, visible: Int, scroll: CGFloat) -> CGFloat {
@@ -77,32 +69,51 @@ struct LineView: View {
             let displayed = line.items
             ZStack(alignment: .topLeading) {
                 Rope(width: width)
-                HStack(spacing: 12) {
-                    Button("← 更早") { withAnimation(.easeOut(duration: 0.2)) { line.scroll(by: Layout.spacing * CGFloat(line.visibleCount)) } }
-                        .disabled(line.scroll >= CGFloat(max(0, line.items.count - line.visibleCount)) * Layout.spacing)
-                    Button("搜索与整理  ﹀") { CaptureDrawer.shared.show() }
-                    Button("更新 →") { withAnimation(.easeOut(duration: 0.2)) { line.scroll(by: -Layout.spacing * CGFloat(line.visibleCount)) } }
-                        .disabled(line.scroll <= 0)
-                    Text("共 \(line.items.count) 张").font(.caption).foregroundStyle(.secondary)
+                HStack(spacing: 8) {
+                    HStack(spacing: 12) {
+                    Button { withAnimation(.easeOut(duration: 0.2)) { line.scroll(by: Layout.spacing * CGFloat(line.visibleCount)) } } label: {
+                        Label("更早", systemImage: "chevron.left")
+                    }
+                    .disabled(line.scroll >= CGFloat(max(0, line.items.count - line.visibleCount)) * Layout.spacing)
+                    Button { CaptureDrawer.shared.show() } label: { Label("搜索与整理", systemImage: "magnifyingglass") }
+                    }.frame(width: 170)
+                    Divider().frame(height: 24)
+                    HStack(spacing: 7) {
+                        Image(systemName: "plus").font(.system(size: 23, weight: .medium))
+                        Text("拖入图片").font(.system(size: 12, weight: .semibold))
+                    }
+                    .frame(width: 114, height: 42)
+                    .background(Color.accentColor.opacity(0.14), in: RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.accentColor.opacity(0.25)))
+                    .overlay(CaptureDrop())
+                    .help("拖入图片或文字 · 单击添加 · 双击上传剪贴板图片")
+                    .background(GeometryReader { g in Color.clear.preference(key: HitRectsKey.self, value: [dropID: g.frame(in: .named("line"))]) })
+                    Divider().frame(height: 24)
+                    HStack(spacing: 12) {
+                    Text("共 \(line.items.count) 张").font(.system(size: 11)).foregroundStyle(.secondary)
+                    Button { withAnimation(.easeOut(duration: 0.2)) { line.scroll(by: -Layout.spacing * CGFloat(line.visibleCount)) } } label: {
+                        Label("更新", systemImage: "chevron.right")
+                    }
+                    .disabled(line.scroll <= 0)
+                    }.frame(width: 170)
                 }
-                    .buttonStyle(.borderedProminent)
-                    .background(GeometryReader { g in Color.clear.preference(key: HitRectsKey.self, value: [handleID: g.frame(in: .named("line"))]) })
-                    .simultaneousGesture(DragGesture(minimumDistance: 12).onEnded { value in if value.translation.height > 20 { CaptureDrawer.shared.show() } })
-                    .position(x: width / 2, y: Layout.panelHeight - 20)
-
-                VStack(spacing: 8) {
-                    Image(systemName: "plus").font(.system(size: 27, weight: .light))
-                    Text("拖入图片").font(.system(size: 13, weight: .semibold))
-                    Text(importer.message == "＋ 拖入图片" ? "单击添加 · 双击上传" : importer.message)
-                        .font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(2)
-                }
-                .frame(width: 152, height: 112)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))
-                .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(Color.orange.opacity(0.7), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
-                .overlay(CaptureDrop())
-                .background(GeometryReader { g in Color.clear.preference(key: HitRectsKey.self, value: [dropID: g.frame(in: .named("line"))]) })
-                .position(x: width / 2, y: 96)
+                .font(.system(size: 12, weight: .medium))
+                .buttonStyle(.borderless)
+                .padding(.horizontal, 14).padding(.vertical, 7)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 19))
+                .overlay(RoundedRectangle(cornerRadius: 19).strokeBorder(.white.opacity(0.4)))
+                .shadow(color: .black.opacity(0.14), radius: 10, y: 3)
+                .background(GeometryReader { g in Color.clear.preference(key: HitRectsKey.self, value: [handleID: g.frame(in: .named("line"))]) })
+                .position(x: width / 2, y: Layout.panelHeight - 34)
                 .zIndex(2)
+
+                if importer.message != "＋ 拖入图片" {
+                    Text(importer.message).font(.system(size: 10)).lineLimit(1)
+                        .padding(.horizontal, 10).padding(.vertical, 3)
+                        .background(.regularMaterial, in: Capsule())
+                        .position(x: width / 2, y: Layout.panelHeight - 72)
+                        .allowsHitTesting(false).zIndex(3)
+                }
 
                 ForEach(Array(displayed.enumerated()), id: \.element.id) { index, item in
                     let x = Layout.x(index: index, count: displayed.count, width: width, visible: line.visibleCount, scroll: line.scroll)
