@@ -59,7 +59,6 @@ enum Layout {
 
 struct LineView: View {
     @ObservedObject var line: Line
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ObservedObject private var importer = CaptureImport.shared
     private let dropID = UUID(uuidString: "11223344-0000-0000-0000-000000000002")!
     private let handleID = UUID(uuidString: "11223344-0000-0000-0000-000000000001")!
@@ -122,7 +121,6 @@ struct LineView: View {
                     let x = Layout.x(index: index, count: displayed.count, width: width, visible: line.visibleCount, scroll: line.scroll)
                     let ropeY: CGFloat = 34
                     PeggedView(item: item, line: line)
-                        .modifier(ScrollWaveModifier(trigger: reduceMotion ? 0 : Int(line.scroll / 44), index: index, visible: line.visibleCount))
                         .frame(width: Layout.cardWidth, height: Layout.panelHeight - ropeY, alignment: .top)
                         // Photos scrolled towards an edge fade out before they reach it.
                         .opacity(min(1, max(0, min(x, width - x) / 90)))
@@ -205,32 +203,5 @@ private struct CaptureDockButtonStyle: ButtonStyle {
             .padding(.vertical, 9).padding(.horizontal, 5)
             .background(Color.white.opacity(configuration.isPressed && enabled ? 0.15 : 0), in: RoundedRectangle(cornerRadius: 8))
             .contentShape(Rectangle())
-    }
-}
-
-private struct ScrollWave {
-    var lift: CGFloat = 0
-    var tilt: Double = 0
-}
-
-private struct ScrollWaveModifier: ViewModifier {
-    let trigger: Int
-    let index: Int
-    let visible: Int
-    func body(content: Content) -> some View {
-        content.keyframeAnimator(initialValue: ScrollWave(), trigger: trigger) { view, wave in
-            view.offset(y: wave.lift).rotationEffect(.degrees(wave.tilt), anchor: .top)
-        } keyframes: { _ in
-            KeyframeTrack(\.lift) {
-                LinearKeyframe(0, duration: Double(index % max(1, visible)) * 0.025)
-                CubicKeyframe(-5, duration: 0.10)
-                SpringKeyframe(0, duration: 0.30, spring: .smooth)
-            }
-            KeyframeTrack(\.tilt) {
-                LinearKeyframe(0, duration: Double(index % max(1, visible)) * 0.025)
-                CubicKeyframe(index.isMultiple(of: 2) ? 1.8 : -1.8, duration: 0.10)
-                SpringKeyframe(0, duration: 0.30, spring: .smooth)
-            }
-        }
     }
 }
