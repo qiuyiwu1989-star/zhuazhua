@@ -91,7 +91,8 @@ struct LineView: View {
                     .background(GeometryReader { g in Color.clear.preference(key: HitRectsKey.self, value: [dropID: g.frame(in: .named("line"))]) })
                     Rectangle().fill(Color.white.opacity(0.18)).frame(width: 1, height: 24)
                     HStack(spacing: 12) {
-                    Text("共 \(line.items.count) 张").font(.system(size: 12)).foregroundStyle(Color(white: 0.82))
+                    Button { CaptureWaterfall.shared.show() } label: { Label("展开", systemImage: "chevron.down") }
+                        .help("展开全部采集，瀑布流浏览")
                     Button { withAnimation(.easeOut(duration: 0.2)) { line.scroll(by: -Layout.spacing * CGFloat(line.visibleCount)) } } label: {
                         Label("更新", systemImage: "chevron.right")
                     }
