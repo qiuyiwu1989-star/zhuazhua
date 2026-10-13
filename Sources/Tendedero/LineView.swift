@@ -43,6 +43,13 @@ enum Layout {
     /// `scroll` brings older ones in from the left. Otherwise (a line hung
     /// on a wider screen) they move closer together so none is past the edge.
     static func x(index: Int, count: Int, width: CGFloat, visible: Int, scroll: CGFloat) -> CGFloat {
+        let gap = cardWidth + 176
+        let available = max(240, width - gap)
+        let raw = photoX(index: index, count: count, width: available, visible: visible, scroll: scroll)
+        return raw < available / 2 ? raw : raw + gap
+    }
+
+    private static func photoX(index: Int, count: Int, width: CGFloat, visible: Int, scroll: CGFloat) -> CGFloat {
         if Line.keepOnLine != nil && count > visible {
             let newest = width / 2 + CGFloat(visible - 1) * spacing / 2
             return newest - CGFloat(count - 1 - index) * spacing + scroll
@@ -70,20 +77,19 @@ struct LineView: View {
                     .simultaneousGesture(DragGesture(minimumDistance: 12).onEnded { value in if value.translation.height > 20 { CaptureDrawer.shared.show() } })
                     .position(x: width / 2, y: Layout.panelHeight - 20)
 
-                Text(importer.message)
-                    .font(.system(size: 12, weight: .semibold))
-                    .lineLimit(1)
-                    .padding(.horizontal, 12).frame(width: 260, height: 32)
-                    .background(.regularMaterial, in: Capsule())
-                    .overlay(CaptureDrop())
-                    .background(GeometryReader { g in Color.clear.preference(key: HitRectsKey.self, value: [dropID: g.frame(in: .named("line"))]) })
-                    .position(x: min(width - 140, width / 2 + 220), y: Layout.panelHeight - 20)
-
-                if line.items.isEmpty {
-                    Hint()
-                        .position(x: width / 2, y: Layout.ropeY(x: width / 2, width: width) + 34)
-                        .transition(.opacity)
+                VStack(spacing: 8) {
+                    Image(systemName: "plus").font(.system(size: 27, weight: .light))
+                    Text("拖入图片").font(.system(size: 13, weight: .semibold))
+                    Text(importer.message == "＋ 拖入图片" ? "或点击添加" : importer.message)
+                        .font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(2)
                 }
+                .frame(width: 152, height: 112)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))
+                .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(Color.orange.opacity(0.7), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
+                .overlay(CaptureDrop())
+                .background(GeometryReader { g in Color.clear.preference(key: HitRectsKey.self, value: [dropID: g.frame(in: .named("line"))]) })
+                .position(x: width / 2, y: Layout.ropeY(x: width / 2, width: width) + 62)
+                .zIndex(2)
 
                 ForEach(Array(line.items.enumerated()), id: \.element.id) { index, item in
                     let x = Layout.x(index: index, count: line.items.count, width: width,
