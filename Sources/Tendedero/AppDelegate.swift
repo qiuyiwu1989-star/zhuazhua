@@ -80,6 +80,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         registerShortcut()
 
         for item in line.items { WebsiteCapture.shared.stage(item.url, allowAutomatic: false) }
+        if !UserDefaults.standard.bool(forKey: "originalSpacingRestored") {
+            for record in WebsiteCapture.shared.records.prefix(line.visibleCount).reversed() {
+                let url = URL(fileURLWithPath: record.file)
+                if !line.items.contains(where: { $0.url.path == record.source || $0.url.path == record.file }) {
+                    _ = line.hang(url, quietly: true)
+                }
+            }
+            UserDefaults.standard.set(true, forKey: "originalSpacingRestored")
+        }
         WebsiteCapture.shared.startOCR()
         WebsiteCapture.shared.onSettings = { CaptureSettings.shared.show() }
         CaptureDrawer.shared.onOpen = { [weak self] in self?.setRevealed(false) }
@@ -610,8 +619,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func updateCapacity() {
-        let usable = panel.frame.width - 200 - Layout.cardWidth - 176
-        let fits = max(3, min(12, Int(usable / Layout.spacing)))
+        let usable = panel.frame.width - 200
+        let fits = max(4, min(12, Int(usable / Layout.spacing) / 2 * 2))
         line.visibleCount = fits
         line.maxItems = max(fits, Line.keepOnLine ?? fits)
     }

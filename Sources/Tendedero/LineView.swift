@@ -42,36 +42,16 @@ enum Layout {
     /// the newest stays where the last one would hang on a full line, and
     /// `scroll` brings older ones in from the left. Otherwise (a line hung
     /// on a wider screen) they move closer together so none is past the edge.
-    /// Distribute each side across its available width, preserving image sizes.
-    static func centeredPositions(widths: [CGFloat], width: CGFloat) -> [CGFloat] {
-        let split = widths.count / 2
-        var positions = Array(repeating: CGFloat.zero, count: widths.count)
-        let outer: CGFloat = 40
-        let centerGap: CGFloat = 28
-        func distribute(_ range: Range<Int>, start: CGFloat, end: CGFloat) {
-            guard !range.isEmpty else { return }
-            let total = range.reduce(CGFloat.zero) { $0 + widths[$1] }
-            if range.count == 1 {
-                positions[range.lowerBound] = (start + end) / 2
-                return
-            }
-            let gap = max(24, (end - start - total) / CGFloat(range.count - 1))
-            var cursor = start
-            for i in range {
-                positions[i] = cursor + widths[i] / 2
-                cursor += widths[i] + gap
-            }
-        }
-        distribute(0..<split, start: outer, end: width / 2 - 76 - centerGap)
-        distribute(split..<widths.count, start: width / 2 + 76 + centerGap, end: width - outer)
-        return positions
-    }
-
     static func x(index: Int, count: Int, width: CGFloat, visible: Int, scroll: CGFloat) -> CGFloat {
-        let gap = cardWidth + 176
-        let available = max(240, width - gap)
-        let raw = photoX(index: index, count: count, width: available, visible: visible, scroll: scroll)
-        return raw < available / 2 ? raw : raw + gap
+        // Keep the original pitch; insert one reserved slot at the center.
+        let slotsPerSide = max(1, visible / 2)
+        let slot = CGFloat(index - max(0, count - visible)) + scroll / spacing
+        let split = CGFloat(slotsPerSide)
+        let edge = 76 + 24 + cardWidth / 2
+        if slot < split {
+            return width / 2 - edge - (split - 1 - slot) * spacing
+        }
+        return width / 2 + edge + (slot - split) * spacing
     }
 
     private static func photoX(index: Int, count: Int, width: CGFloat, visible: Int, scroll: CGFloat) -> CGFloat {
@@ -94,8 +74,7 @@ struct LineView: View {
     var body: some View {
         GeometryReader { geo in
             let width = geo.size.width
-            let displayed = Array(line.items.suffix(max(1, line.visibleCount)))
-            let positions = Layout.centeredPositions(widths: displayed.map { PeggedView.cardSize(for: $0.thumb.size).width }, width: width)
+            let displayed = line.items
             ZStack(alignment: .topLeading) {
                 Rope(width: width)
                 Button("搜索与整理  ﹀") { CaptureDrawer.shared.show() }
@@ -119,7 +98,7 @@ struct LineView: View {
                 .zIndex(2)
 
                 ForEach(Array(displayed.enumerated()), id: \.element.id) { index, item in
-                    let x = positions[index]
+                    let x = Layout.x(index: index, count: displayed.count, width: width, visible: line.visibleCount, scroll: line.scroll)
                     let ropeY: CGFloat = 34
                     PeggedView(item: item, line: line)
                         .frame(width: Layout.cardWidth, height: Layout.panelHeight - ropeY, alignment: .top)
