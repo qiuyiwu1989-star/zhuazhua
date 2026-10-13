@@ -80,9 +80,11 @@ struct PeggedView: View {
             }
             .overlay(alignment: .bottomLeading) {
                 if let state = captures.status(item.url) {
-                    Text(state).font(.system(size: 10, weight: .medium))
-                        .padding(4).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 5))
-                        .padding(4).allowsHitTesting(false)
+                    Image(systemName: state == "已入档" ? "checkmark.circle.fill" : state == "待同步" ? "exclamationmark.circle.fill" : state.contains("上传") ? "arrow.triangle.2.circlepath.circle.fill" : "circle")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(state == "已入档" ? Color.green : state == "待同步" ? Color.orange : state.contains("上传") ? Color.blue : Color.secondary)
+                        .padding(2).background(.regularMaterial, in: Circle())
+                        .padding(5).accessibilityLabel(state).allowsHitTesting(false)
                 }
             }
             .padding(Frame.inset)
@@ -116,7 +118,7 @@ struct PeggedView: View {
                     .opacity(hovering && !dragging ? 1 : 0)
                     .allowsHitTesting(false)
             }
-            .help("悬停放大 · 单击复制 · 双击快速预览")
+            .help((captures.status(item.url).map { $0 + " · " } ?? "") + "悬停放大 · 单击复制 · 双击快速预览")
             .overlay(GrabArea(item: item, line: line))
             .overlay(alignment: .bottom) {
                 if copied {
