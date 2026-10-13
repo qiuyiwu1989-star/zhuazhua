@@ -9,23 +9,10 @@ final class CaptureDrawer {
     private var expanded = false
     func show() {
         onOpen?()
-        if window == nil {
-            let panel = NSPanel(contentRect: .zero, styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
-            panel.title = "爪爪 · 图片整理"
-            panel.isReleasedWhenClosed = false
-            panel.hidesOnDeactivate = false
-            panel.level = .floating
-            panel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
-            panel.minSize = NSSize(width: 680, height: 360)
-            panel.contentView = NSHostingView(rootView: CaptureDrawerView())
-            window = panel
-        }
-        place()
-        NSApp.activate(ignoringOtherApps: true)
-        window?.makeKeyAndOrderFront(nil)
-        NotificationCenter.default.post(name: .captureSearchFocus, object: nil)
+        CaptureWaterfall.shared.show()
     }
-    func hide() { window?.orderOut(nil) }
+
+    func hide() { CaptureWaterfall.shared.hide() }
     func toggleSize() { expanded.toggle(); place() }
     private func place() {
         guard let screen = window?.screen ?? LinePanel.screenUnderPointer() else { return }
@@ -39,6 +26,7 @@ struct CaptureDrawerView: View {
     @ObservedObject private var model = WebsiteCapture.shared
     @FocusState private var searchFocused: Bool
     @FocusState private var tagFocused: Bool
+    @State private var organizing = false
     @State private var feedback = ""
     @State private var query = ""
     @State private var dateFilter = false
@@ -63,9 +51,10 @@ struct CaptureDrawerView: View {
                 Image(systemName: "magnifyingglass")
                 TextField("搜索图片文字、文件名、备注、标签", text: $query).textFieldStyle(.roundedBorder).focused($searchFocused)
                 Text("\(matches.count) 张").foregroundStyle(.secondary)
-                Button("展开 / 半屏", systemImage: "arrow.up.left.and.arrow.down.right") { CaptureDrawer.shared.toggleSize() }
+                Button(organizing ? "完成整理" : "选择与整理", systemImage: "checkmark.circle") { organizing.toggle() }
                 Button("收起", systemImage: "chevron.up") { CaptureDrawer.shared.hide() }.keyboardShortcut(.escape, modifiers: [])
             }
+            if organizing {
             HStack {
                 Toggle("按日期查看", isOn: $dateFilter)
                 Picker("时间", selection: $timeKind) { Text("收集时间").tag("收集"); Text("整理时间").tag("整理") }.frame(width: 175)
@@ -116,19 +105,23 @@ struct CaptureDrawerView: View {
                 }
                 Text("标签应用于选中的本地图片；已上传或正在上传的记录不会修改。 ").font(.caption).foregroundStyle(.secondary)
             }
+            }
             if matches.isEmpty {
                 Spacer()
                 Text(query.isEmpty ? "截图后，图片会自动收集到这里" : "没有匹配的图片，试试其他关键词").foregroundStyle(.secondary)
                 Spacer()
             } else {
                 ScrollView {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 170, maximum: 230))], spacing: 16) {
-                        ForEach(matches) { record in
+                    HStack(alignment: .top, spacing: 16) {
+                        ForEach(0..<4, id: \.self) { column in
+                        LazyVStack(spacing: 16) {
+                        ForEach(Array(matches.enumerated()).filter { $0.offset % 4 == column }.map(\.element)) { record in
                             VStack(alignment: .leading, spacing: 6) {
                                 if let image = NSImage(contentsOfFile: record.file) {
-                                    Image(nsImage: image).resizable().scaledToFit().frame(height: 130).frame(maxWidth: .infinity)
-                                        .contentShape(Rectangle()).onTapGesture(count: 2) { preview = record }
+                                    Image(nsImage: image).resizable().scaledToFit().frame(maxWidth: .infinity)
+                                        .contentShape(Rectangle()).onTapGesture { preview = record }
                                 }
+                                if organizing {
                                 Toggle(isOn: Binding(get: { selected.contains(record.id) }, set: { on in
                                     searchFocused = false; tagFocused = false
                                     if on { selected.insert(record.id) } else { selected.remove(record.id) }
@@ -144,8 +137,9 @@ struct CaptureDrawerView: View {
                                 Text(record.vaultError != nil ? "同步待重试" : (record.vaultSyncedAt != nil ? "已同步到知行档案" : "仅在本地")).font(.caption2).foregroundStyle(.secondary)
                                 Text(model.ocrStatus(record)).font(.caption2).foregroundStyle(.secondary)
                                 if let excerpt = record.searchExcerpt(query) { Text(excerpt).font(.caption).lineLimit(2).help(excerpt) }
+                                }
                             }
-                            .padding(10).background(selected.contains(record.id) ? Color.accentColor.opacity(0.12) : Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10))
+                            .padding(organizing ? 10 : 0).background(selected.contains(record.id) ? Color.accentColor.opacity(0.12) : Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10))
                             .contextMenu {
                                 Button(record.vaultSyncedAt == nil ? "同步到知行档案" : "重新同步到知行档案") { vault.enqueue([record.id], model: model) }
                                 if let error = record.vaultError { Text("同步失败：" + error) }
@@ -156,6 +150,8 @@ struct CaptureDrawerView: View {
                                     if let image = NSImage(contentsOfFile: record.file) { NSPasteboard.general.clearContents(); NSPasteboard.general.writeObjects([image]) }
                                 }
                             }
+                        }
+                        }.frame(maxWidth: .infinity)
                         }
                     }.padding(4)
                 }
