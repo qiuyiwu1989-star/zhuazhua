@@ -6,6 +6,7 @@ import UniformTypeIdentifiers
 struct TextNote: Codable, Identifiable, Equatable {
     var id = UUID().uuidString.lowercased()
     var title = ""
+    var automaticTitle: Bool? = nil
     var markdown = ""
     var tags = ""
     var sourceURL = ""
@@ -49,6 +50,23 @@ final class Notes: ObservableObject {
             do { records = try JSONDecoder().decode([TextNote].self, from: Data(contentsOf: ledger)) }
             catch { readable = false; message = "笔记记录读取失败，已停止写入以保护原文件" }
         }
+        var changed = false
+        for i in records.indices where records[i].title.isEmpty && !records[i].markdown.isEmpty {
+            records[i].title = Self.suggestTitle(records[i].markdown)
+            records[i].automaticTitle = true
+            records[i].syncedAt = nil
+            records[i].wantsSync = false
+            changed = true
+        }
+        if changed { _ = persist() }
+    }
+    static func suggestTitle(_ markdown: String) -> String {
+        let blocks = NoteBlock.parse(markdown)
+        let heading = blocks.first { if case .heading = $0.kind { return true }; return false }
+        let first = heading ?? blocks.first { $0.kind == .paragraph || $0.kind == .quote }
+        guard let text = first?.text else { return "" }
+        let plain = String(MarkdownNotePreview.inline(text).characters).trimmingCharacters(in: .whitespacesAndNewlines)
+        return String(plain.prefix(36)) + (plain.count > 36 ? "…" : "")
     }
     @discardableResult func persist() -> Bool {
         guard readable else { return false }
@@ -61,7 +79,7 @@ final class Notes: ObservableObject {
     }
     func create(_ text: String = "", title: String = "") {
         guard readable, text.utf8.count <= 1024 * 1024 else { message = "文字不能超过 1 MB"; return }
-        var n = TextNote(); n.markdown = text; n.title = title
+        var n = TextNote(); n.markdown = text; n.title = title.isEmpty ? Self.suggestTitle(text) : title; n.automaticTitle = title.isEmpty
         n.attachments = Self.attachmentDigests(text)
         if let error = Self.validationError(n) { message = error; show(); return }
         records.insert(n, at: 0); selected = n.id
@@ -86,6 +104,10 @@ final class Notes: ObservableObject {
     func edit(_ value: TextNote) {
         guard let i = records.firstIndex(where: { $0.id == value.id }) else { return }
         var n = value; n.modifiedAt = Date(); n.syncedAt = nil; n.error = nil; n.wantsSync = false
+        if value.title != records[i].title { n.automaticTitle = value.title.isEmpty }
+        if n.automaticTitle == true || n.title.isEmpty {
+            n.title = Self.suggestTitle(n.markdown); n.automaticTitle = true
+        }
         n.attachments = Self.attachmentDigests(n.markdown)
         records[i] = n
         if persist() { message = "草稿已保存到本机" }
@@ -285,14 +307,27 @@ struct NotesView: View {
 
 /// A deliberately small native Markdown renderer: never executes HTML or fetches remote images.
 struct NoteBlock: Identifiable, Equatable {
-    enum Kind: Equatable { case paragraph, heading(Int), code, quote, list(String), image(String), rule }
+    enum Kind: Equatable { case paragraph, heading(Int), code, quote, list(String), image(String), rule, table([[String]]) }
     var id: Int
     var kind: Kind
     var text: String
     static func parse(_ source: String) -> [NoteBlock] {
         var blocks: [NoteBlock] = []; var code: [String] = []; var fence: String?
         func add(_ kind: Kind, _ text: String) { blocks.append(NoteBlock(id: blocks.count, kind: kind, text: text)) }
-        for line in source.components(separatedBy: "\n") {
+        let lines = source.replacingOccurrences(of: "\r\n", with: "\n").components(separatedBy: "\n")
+        var index = 0
+        while index < lines.count {
+            let line = lines[index]; index += 1
+            if fence == nil, index < lines.count, line.contains("|"), Self.isTableDivider(lines[index]) {
+                let header = Self.cells(line)
+                if header.count == Self.cells(lines[index]).count {
+                    var rows = [header]; index += 1
+                    while index < lines.count, lines[index].contains("|"), !lines[index].trimmingCharacters(in: .whitespaces).isEmpty {
+                        let cells = Self.cells(lines[index]); rows.append(Array((cells + Array(repeating: "", count: header.count)).prefix(header.count))); index += 1
+                    }
+                    add(.table(rows), ""); continue
+                }
+            }
             if let marker = fence {
                 if line.hasPrefix(marker) { add(.code, code.joined(separator: "\n")); code = []; fence = nil }
                 else { code.append(line) }
@@ -313,16 +348,33 @@ struct NoteBlock: Identifiable, Equatable {
         if fence != nil { add(.code, code.joined(separator: "\n")) }
         return blocks
     }
+    static func cells(_ line: String) -> [String] {
+        var text = line.trimmingCharacters(in: .whitespaces)
+        if text.hasPrefix("|") { text.removeFirst() }; if text.hasSuffix("|") { text.removeLast() }
+        var result: [String] = [], cell = "", escaped = false, inCode = false
+        for ch in text {
+            if escaped { cell.append(ch); escaped = false; continue }
+            if ch == "\\" { escaped = true; continue }
+            if ch == "`" { inCode.toggle() }
+            if ch == "|" && !inCode { result.append(cell.trimmingCharacters(in: .whitespaces)); cell = "" } else { cell.append(ch) }
+        }
+        if escaped { cell.append("\\") }
+        result.append(cell.trimmingCharacters(in: .whitespaces)); return result
+    }
+    static func isTableDivider(_ line: String) -> Bool {
+        let parts = cells(line)
+        return line.contains("|") && parts.allSatisfy { $0.range(of: "^:?-{3,}:?$", options: .regularExpression) != nil }
+    }
 }
 struct MarkdownNotePreview: View {
     let markdown: String
     var body: some View {
         ScrollView {
-            LazyVStack(alignment:.leading,spacing:10) {
+            LazyVStack(alignment:.leading,spacing:18) {
                 ForEach(NoteBlock.parse(markdown)) { block in
                     switch block.kind {
                     case .heading(let depth):
-                        Text(Self.inline(block.text)).font(depth == 1 ? .title.bold() : depth == 2 ? .title2.bold() : .headline).textSelection(.enabled)
+                        Text(Self.inline(block.text)).font(.system(size: depth == 1 ? 28 : depth == 2 ? 23 : 19, weight: .semibold)).padding(.top, 12).textSelection(.enabled)
                     case .code:
                         Text(block.text).font(.system(.body,design:.monospaced)).textSelection(.enabled).frame(maxWidth:.infinity,alignment:.leading).padding(10).background(.quaternary,in:RoundedRectangle(cornerRadius:6))
                     case .quote:
@@ -333,11 +385,31 @@ struct MarkdownNotePreview: View {
                         if let image = Self.localImage(digest) {
                             Image(nsImage:image).resizable().scaledToFit()
                         } else { Label("本机没有这张附件图片",systemImage:"photo").foregroundStyle(.secondary) }
-                    case .rule: Divider()
+                    case .table(let rows):
+                        ScrollView(.horizontal) {
+                            Grid(alignment: .topLeading, horizontalSpacing: 0, verticalSpacing: 0) {
+                                ForEach(rows.indices, id: \.self) { row in
+                                    GridRow {
+                                        ForEach(rows[row].indices, id: \.self) { column in
+                                            Text(Self.inline(rows[row][column]))
+                                                .font(.system(size: 14, weight: row == 0 ? .semibold : .regular))
+                                                .lineSpacing(5).textSelection(.enabled)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                                .frame(width: rows[row].count <= 2 ? 230 : 180, alignment: .topLeading)
+                                                .padding(12)
+                                                .frame(maxHeight: .infinity, alignment: .topLeading)
+                                                .background(row == 0 ? Color.accentColor.opacity(0.09) : row.isMultiple(of: 2) ? Color.primary.opacity(0.025) : Color.clear)
+                                                .overlay(Rectangle().stroke(Color.primary.opacity(0.09), lineWidth: 0.5))
+                                        }
+                                    }
+                                }
+                            }.clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
+                    case .rule: Divider().padding(.vertical, 6)
                     case .paragraph: Text(Self.inline(block.text)).textSelection(.enabled).frame(maxWidth:.infinity,alignment:.leading)
                     }
                 }
-            }.padding(12).frame(maxWidth:.infinity,alignment:.leading)
+            }.font(.system(size: 16)).lineSpacing(7).padding(28).frame(maxWidth: 860, alignment: .leading).frame(maxWidth:.infinity,alignment:.center)
         }.background(Color(nsColor:.textBackgroundColor))
     }
     static func localImage(_ digest: String) -> NSImage? {
