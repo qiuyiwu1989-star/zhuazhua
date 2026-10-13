@@ -2,6 +2,10 @@ import AppKit
 import SwiftUI
 import ImageIO
 
+private final class WaterfallPanel: NSPanel {
+    override var canBecomeKey: Bool { true }
+}
+
 @MainActor
 final class CaptureWaterfall {
     static let shared = CaptureWaterfall()
@@ -11,7 +15,8 @@ final class CaptureWaterfall {
     func show() {
         guard let screen = LinePanel.screenUnderPointer() else { return }
         if panel == nil {
-            let p = NSPanel(contentRect: .zero, styleMask: [.borderless], backing: .buffered, defer: false)
+            let p = WaterfallPanel(contentRect: .zero, styleMask: [.borderless], backing: .buffered, defer: false)
+            p.title = "爪爪 · 全部采集"
             p.isReleasedWhenClosed = false
             p.level = .floating
             p.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
@@ -51,6 +56,7 @@ final class CaptureWaterfall {
 private struct CaptureWaterfallView: View {
     @ObservedObject private var model = WebsiteCapture.shared
     @State private var query = ""
+    @State private var preview: CaptureRecord?
     var body: some View {
         VStack(spacing: 0) {
             HStack {
@@ -59,7 +65,7 @@ private struct CaptureWaterfallView: View {
                 TextField("搜索图片文字、备注、标签", text: $query).textFieldStyle(.roundedBorder).frame(maxWidth: 360)
                 Spacer()
                 Button("搜索与整理") { CaptureDrawer.shared.show() }
-                Button("收起", systemImage: "chevron.up") { CaptureWaterfall.shared.hide() }.keyboardShortcut(.escape, modifiers: [])
+                Button("收起", systemImage: "chevron.up") { if preview != nil { preview = nil } else { CaptureWaterfall.shared.hide() } }.keyboardShortcut(.escape, modifiers: [])
             }.padding(16)
             Divider()
             GeometryReader { geo in
@@ -71,7 +77,7 @@ private struct CaptureWaterfallView: View {
                         ForEach(0..<count, id: \.self) { column in
                             LazyVStack(spacing: 16) {
                                 ForEach(Array(records.enumerated()).filter { $0.offset % count == column }.map(\.element)) { record in
-                                    WaterfallImage(record: record)
+                                    WaterfallImage(record: record, onPreview: { preview = record })
                                 }
                             }.frame(maxWidth: .infinity)
                         }
@@ -79,11 +85,29 @@ private struct CaptureWaterfallView: View {
                 }
             }
         }.background(Color(nsColor: .windowBackgroundColor))
+        .overlay {
+            if let record = preview {
+                ZStack {
+                    Color.black.opacity(0.8).onTapGesture { preview = nil }
+                    VStack(spacing: 12) {
+                        HStack {
+                            Button("返回收藏库", systemImage: "chevron.left") { preview = nil }
+                            Spacer()
+                            Button("打开原图 ↗") { NSWorkspace.shared.open(URL(fileURLWithPath: record.file)) }
+                        }
+                        if let image = NSImage(contentsOfFile: record.file) {
+                            Image(nsImage: image).resizable().scaledToFit().frame(maxWidth: .infinity, maxHeight: .infinity)
+                        } else { Text("原图暂时不可读取").frame(maxWidth: .infinity, maxHeight: .infinity) }
+                    }.padding(20).background(Color(nsColor: .windowBackgroundColor), in: RoundedRectangle(cornerRadius: 16)).padding(32)
+                }
+            }
+        }
     }
 }
 
 private struct WaterfallImage: View {
     let record: CaptureRecord
+    let onPreview: () -> Void
     @State private var image: NSImage?
     var body: some View {
         Group {
@@ -91,8 +115,8 @@ private struct WaterfallImage: View {
                 Image(nsImage: image).resizable().scaledToFit()
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .shadow(color: .black.opacity(0.12), radius: 5, y: 2)
-                    .onTapGesture { NSWorkspace.shared.open(URL(fileURLWithPath: record.file)) }
-                    .help("点击打开原图")
+                    .onTapGesture(perform: onPreview)
+                    .help("点击放大预览，保留浏览位置")
             } else { RoundedRectangle(cornerRadius: 12).fill(.quaternary).frame(height: 160) }
         }
         .task(id: record.file) {
