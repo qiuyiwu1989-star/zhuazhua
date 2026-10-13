@@ -12,14 +12,18 @@ import Quartz
 final class QuickLook: NSObject, QLPreviewPanelDataSource, QLPreviewPanelDelegate {
     static let shared = QuickLook()
 
+    var onOpen: (() -> Void)?
     private var urls: [URL] = []
 
     func show(_ urls: [URL], at index: Int) {
         guard !urls.isEmpty, let panel = QLPreviewPanel.shared() else { return }
+        onOpen?()
         self.urls = urls
         NSApp.activate(ignoringOtherApps: true)
         // Quick Look asks the responder chain who controls it; with no
         // window of ours that is the app delegate, which hands it to us.
+        panel.level = .floating
+        panel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
         panel.updateController()
         panel.reloadData()
         panel.currentPreviewItemIndex = index
@@ -52,6 +56,10 @@ final class QuickLook: NSObject, QLPreviewPanelDataSource, QLPreviewPanelDelegat
     /// Left and right go to the photo before or after it on the line.
     nonisolated func previewPanel(_ panel: QLPreviewPanel!, handle event: NSEvent!) -> Bool {
         guard event.type == .keyDown, let panel else { return false }
+        if event.keyCode == 49 || event.keyCode == 53 {
+            MainActor.assumeIsolated { panel.orderOut(nil) }
+            return true
+        }
         let step: Int
         switch Int(event.keyCode) {
         case 123: step = -1 // left arrow

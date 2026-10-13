@@ -107,6 +107,16 @@ struct PeggedView: View {
                     .scaleEffect(hovering ? 1 : 0.6)
                     .allowsHitTesting(false)
             }
+            .overlay(alignment: .topTrailing) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 10, weight: .semibold))
+                    .frame(width: 20, height: 20)
+                    .glassFrame(circle: true)
+                    .padding(3)
+                    .opacity(hovering && !dragging ? 1 : 0)
+                    .allowsHitTesting(false)
+            }
+            .help("单击复制 · 双击快速预览 · 预览中空格或 Esc 关闭")
             .overlay(GrabArea(item: item, line: line))
             .overlay(alignment: .bottom) {
                 if copied {

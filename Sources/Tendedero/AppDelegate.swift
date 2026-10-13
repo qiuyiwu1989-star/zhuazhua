@@ -91,6 +91,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         WebsiteCapture.shared.startOCR()
         WebsiteCapture.shared.onSettings = { CaptureSettings.shared.show() }
+        QuickLook.shared.onOpen = { [weak self] in self?.setRevealed(false) }
         CaptureDrawer.shared.onOpen = { [weak self] in self?.setRevealed(false) }
         CaptureSettings.shared.onOpen = { [weak self] in self?.setRevealed(false) }
         CaptureSettings.shared.onFolder = { [weak self] in self?.chooseExtraFolder() }

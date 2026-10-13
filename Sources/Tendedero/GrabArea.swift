@@ -31,7 +31,7 @@ struct GrabArea: NSViewRepresentable {
         view.url = item.url
         view.dragImage = item.thumb
         view.onClick = { line.copy(id) }
-        view.onDoubleClick = { line.open(id) }
+        view.onDoubleClick = { line.quickLook(id) }
         view.onDragStart = { line.draggingID = id }
         view.onDragEnd = {
             line.draggingID = nil
@@ -54,7 +54,7 @@ struct GrabArea: NSViewRepresentable {
             menu.addItem(.separator())
             menu.addItem(ClosureMenuItem(L("Copy")) { line.copy(id) })
             menu.addItem(ClosureMenuItem(L("Open")) { line.open(id) })
-            menu.addItem(ClosureMenuItem(L("Quick Look")) { line.quickLook(id) })
+            menu.addItem(ClosureMenuItem("快速预览（双击图片）") { line.quickLook(id) })
             if !isRecording {
                 menu.addItem(ClosureMenuItem(L("Markup")) { line.markup(id) })
             }
@@ -122,6 +122,15 @@ final class GrabView: NSView, NSDraggingSource {
     }
 
     override func mouseDown(with event: NSEvent) {
+        let p = convert(event.locationInWindow, from: nil)
+        let previewCorner = NSRect(x: bounds.width - Self.crossHitSize,
+                                   y: isFlipped ? 0 : bounds.height - Self.crossHitSize,
+                                   width: Self.crossHitSize, height: Self.crossHitSize)
+        if previewCorner.contains(p) {
+            downPoint = nil
+            onForceClick()
+            return
+        }
         if isInCross(event) {
             downPoint = nil
             onDiscard()
