@@ -14,6 +14,7 @@ final class VaultSync: ObservableObject {
     }
     var connected: Bool { FileManager.default.fileExists(atPath: Self.tokenURL.path) }
     private var pending = Set<String>()
+    private var completions: [String: (Bool) -> Void] = [:]
     private let redirects = CaptureRedirects()
     private lazy var session: URLSession = {
         let config = URLSessionConfiguration.ephemeral
@@ -23,8 +24,9 @@ final class VaultSync: ObservableObject {
         return URLSession(configuration: config, delegate: redirects, delegateQueue: nil)
     }()
     func openInbox() { NSWorkspace.shared.open(URL(string: "https://qiuyiwu.com/vault/inbox/")!) }
-    func enqueue(_ ids: [String], model: WebsiteCapture) {
+    func enqueue(_ ids: [String], model: WebsiteCapture, completion: ((Bool) -> Void)? = nil) {
         guard !ids.isEmpty else { return }
+        if let completion { for id in ids { completions[id] = completion } }
         pending.formUnion(ids)
         guard !busy else { return }
         busy = true
@@ -32,7 +34,9 @@ final class VaultSync: ObservableObject {
             var failures = 0; var successes = 0
             while let id = pending.first {
                 pending.remove(id)
-                if await sync(id, model: model) { successes += 1 } else { failures += 1 }
+                let success = await sync(id, model: model)
+                if success { successes += 1 } else { failures += 1 }
+                completions.removeValue(forKey: id)?(success)
             }
             busy = false
             message = failures == 0 ? "已同步 \(successes) 张到知行档案收件箱" : "已同步 \(successes) 张，\(failures) 张待重试；本地原图保留"

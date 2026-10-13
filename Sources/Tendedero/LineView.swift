@@ -93,7 +93,7 @@ struct LineView: View {
                 VStack(spacing: 8) {
                     Image(systemName: "plus").font(.system(size: 27, weight: .light))
                     Text("拖入图片").font(.system(size: 13, weight: .semibold))
-                    Text(importer.message == "＋ 拖入图片" ? "或点击添加" : importer.message)
+                    Text(importer.message == "＋ 拖入图片" ? "单击添加 · 双击上传" : importer.message)
                         .font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(2)
                 }
                 .frame(width: 152, height: 112)
