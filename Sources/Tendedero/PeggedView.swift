@@ -116,7 +116,7 @@ struct PeggedView: View {
                     .opacity(hovering && !dragging ? 1 : 0)
                     .allowsHitTesting(false)
             }
-            .help("单击复制 · 双击快速预览 · 预览中空格或 Esc 关闭")
+            .help("悬停放大 · 单击复制 · 双击快速预览")
             .overlay(GrabArea(item: item, line: line))
             .overlay(alignment: .bottom) {
                 if copied {

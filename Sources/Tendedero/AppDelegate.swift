@@ -439,6 +439,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func setRevealed(_ on: Bool) {
+        if !on { HoverPreview.shared.hide() }
         guard on != isRevealed else { return }
         isRevealed = on
         line.revealed = on
@@ -587,9 +588,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// mouse while the cursor is over a photo. Everywhere else, clicks go to
     /// whatever is underneath.
     private func updateMousePassThrough(_ mouse: NSPoint) {
-        guard !GrabView.isDragging else { return }
+        guard !GrabView.isDragging else { HoverPreview.shared.hide(); return }
         let local = panel.convertPoint(fromScreen: mouse)
         let flipped = CGPoint(x: local.x, y: panel.frame.height - local.y)
+        let hovered = line.items.first { item in
+            line.hitRects[item.id]?.contains(flipped) == true
+        }
+        HoverPreview.shared.update(hovered, below: panel.frame, on: panel.screen)
         var overPhoto = line.hitRects.values.contains { $0.insetBy(dx: -4, dy: -4).contains(flipped) }
         // A line longer than the screen also takes the band the photos hang
         // in, gaps included, so a swipe anywhere along it moves it.
