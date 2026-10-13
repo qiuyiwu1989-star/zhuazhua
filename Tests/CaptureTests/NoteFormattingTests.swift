@@ -3,6 +3,13 @@ import XCTest
 
 @MainActor
 final class NoteFormattingTests: XCTestCase {
+    func testPastedBoldAndLiteralCode() {
+        let rendered = MarkdownNotePreview.inline("**理解得准： **分清目标；**事情接得住：**任务跨天")
+        XCTAssertEqual(String(rendered.characters), "理解得准：分清目标；事情接得住：任务跨天")
+        XCTAssertTrue(rendered.runs.contains { $0.inlinePresentationIntent?.contains(.stronglyEmphasized) == true })
+        XCTAssertEqual(String(MarkdownNotePreview.inline("`**原样 **`").characters), "**原样 **")
+        XCTAssertEqual(String(MarkdownNotePreview.inline(#"\*\*原样\*\*"#).characters), "**原样**")
+    }
     func testTableAndEscapedPipes() {
         let blocks = NoteBlock.parse("| 模块 | 说明 |\n|---|:---:|\n| **记忆** | 保留\\|来源 |\n\n正文")
         guard case .table(let rows) = blocks.first?.kind else { return XCTFail("Expected table") }

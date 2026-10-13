@@ -421,7 +421,32 @@ struct MarkdownNotePreview: View {
         let value = String(text[range.upperBound..<end]); return value.count == 64 && value.allSatisfy({$0.isHexDigit}) ? value : nil
     }
     static func inline(_ text:String) -> AttributedString {
-        var result = (try? AttributedString(markdown:text,options:.init(interpretedSyntax:.inlineOnlyPreservingWhitespace))) ?? AttributedString(text)
+        // Accept pasted strong spans with whitespace next to their delimiters.
+        // Tokenize code and escaped characters first so their asterisks stay literal.
+        let pattern = #"(`+)[\s\S]*?\1|\\.|(?<!\*)\*\*(?!\*)([^\n]*?\S[ \t]*)\*\*(?!\*)"#
+        let regex = try! NSRegularExpression(pattern: pattern)
+        let source = text as NSString
+        var result = AttributedString()
+        var cursor = 0
+        func parsed(_ value: String) -> AttributedString {
+            (try? AttributedString(markdown: value, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(value)
+        }
+        for match in regex.matches(in: text, range: NSRange(location: 0, length: source.length)) {
+            result.append(parsed(source.substring(with: NSRange(location: cursor, length: match.range.location - cursor))))
+            if match.range(at: 2).location != NSNotFound {
+                var strong = parsed(source.substring(with: match.range(at: 2)).trimmingCharacters(in: .whitespaces))
+                for run in strong.runs {
+                    var intent = run.inlinePresentationIntent ?? []
+                    intent.insert(.stronglyEmphasized)
+                    strong[run.range].inlinePresentationIntent = intent
+                }
+                result.append(strong)
+            } else {
+                result.append(parsed(source.substring(with: match.range)))
+            }
+            cursor = NSMaxRange(match.range)
+        }
+        result.append(parsed(source.substring(from: cursor)))
         for run in result.runs { if run.link != nil { result[run.range].link = nil } }
         return result
     }
