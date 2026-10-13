@@ -10,6 +10,20 @@ final class NoteFormattingTests: XCTestCase {
         XCTAssertEqual(String(MarkdownNotePreview.inline("`**原样 **`").characters), "**原样 **")
         XCTAssertEqual(String(MarkdownNotePreview.inline(#"\*\*原样\*\*"#).characters), "**原样**")
     }
+    func testTrashRestoresAndPersists() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let model = Notes(directory: root, telemetryEnabled: false)
+        var note = TextNote(); note.markdown = "保留正文"; note.wantsSync = true
+        model.records = [note]
+        model.setTrashed(note.id, trashed: true)
+        let restoredModel = Notes(directory: root, telemetryEnabled: false)
+        XCTAssertNotNil(restoredModel.records[0].deletedAt)
+        XCTAssertFalse(restoredModel.records[0].wantsSync)
+        restoredModel.setTrashed(note.id, trashed: false)
+        XCTAssertNil(restoredModel.records[0].deletedAt)
+        XCTAssertEqual(restoredModel.records[0].markdown, "保留正文")
+    }
     func testTableAndEscapedPipes() {
         let blocks = NoteBlock.parse("| 模块 | 说明 |\n|---|:---:|\n| **记忆** | 保留\\|来源 |\n\n正文")
         guard case .table(let rows) = blocks.first?.kind else { return XCTFail("Expected table") }

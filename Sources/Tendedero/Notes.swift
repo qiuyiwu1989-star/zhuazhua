@@ -6,6 +6,7 @@ import UniformTypeIdentifiers
 struct TextNote: Codable, Identifiable, Equatable {
     var id = UUID().uuidString.lowercased()
     var title = ""
+    var deletedAt: Date? = nil
     var automaticTitle: Bool? = nil
     var markdown = ""
     var tags = ""
@@ -27,6 +28,7 @@ final class Notes: ObservableObject {
     @Published var message = "草稿自动保存在本机；保存并同步后进入知行档案"
     @Published var busy = false
     @Published var search = ""
+    @Published var showingTrash = false
     private var readable = true
     private var window: NSWindow?
     private let ledger: URL
@@ -85,6 +87,23 @@ final class Notes: ObservableObject {
         records.insert(n, at: 0); selected = n.id
         _ = persist(); show(); recordEvent("note_editor_opened")
     }
+    func setTrashed(_ id: String, trashed: Bool) {
+        guard !busy, let i = records.firstIndex(where: { $0.id == id }) else { return }
+        records[i].deletedAt = trashed ? Date() : nil
+        records[i].wantsSync = false
+        pending.remove(id)
+        if persist() { selected = nil; message = trashed ? "已移入本机回收站，可恢复；云端已有副本保留" : "笔记已恢复" }
+    }
+    static func clipboardSource(_ board: NSPasteboard) -> String {
+        // Only trust explicit clipboard metadata, never the current foreground tab.
+        let html = board.string(forType: .html) ?? ""
+        let candidates = [board.string(forType: NSPasteboard.PasteboardType("org.chromium.source-url")),
+                          html.components(separatedBy: "\n").first(where: { $0.hasPrefix("SourceURL:") }).map { String($0.dropFirst(10)).trimmingCharacters(in: .whitespacesAndNewlines) }]
+        return candidates.compactMap { $0 }.first { value in
+            guard let url = URL(string: value), ["http", "https"].contains(url.scheme?.lowercased() ?? ""), url.host != nil else { return false }
+            return true
+        } ?? ""
+    }
     func duplicate(_ original: TextNote) {
         guard readable else { return }
         var note = original
@@ -126,6 +145,11 @@ final class Notes: ObservableObject {
     func pasteText() {
         guard let text = NSPasteboard.general.string(forType: .string), !text.isEmpty else { message = "剪贴板没有文字"; show(); return }
         create(text)
+        if let id = selected, var note = records.first(where: { $0.id == id }) {
+            note.sourceURL = Self.clipboardSource(.general)
+            edit(note)
+            if note.sourceURL.isEmpty { message = "文字已保存；剪贴板未附带来源，请在来源链接中填写原页面地址" }
+        }
     }
     func addImage(id: String) {
         guard let image = NSImage(pasteboard: .general), let tiff = image.tiffRepresentation,
@@ -177,9 +201,9 @@ final class Notes: ObservableObject {
         return accepted
     }
     func enqueue(_ ids: [String]) {
-        for i in records.indices where ids.contains(records[i].id) { records[i].wantsSync = true }
+        for i in records.indices where ids.contains(records[i].id) && records[i].deletedAt == nil { records[i].wantsSync = true }
         guard persist() else { return }
-        pending.formUnion(ids); guard !busy else { return }; busy = true
+        pending.formUnion(ids.filter { id in records.contains { $0.id == id && $0.deletedAt == nil } }); guard !busy else { return }; busy = true
         Task {
             while let id = pending.first { pending.remove(id); await sync(id) }
             busy = false
@@ -207,7 +231,7 @@ final class Notes: ObservableObject {
     }
     func retryPending() { if VaultSync.shared.automatic { enqueue(records.filter { $0.wantsSync && $0.syncedAt == nil && !$0.markdown.isEmpty }.map(\.id)) } }
     func sync(_ id: String) async {
-        guard let note = records.first(where: { $0.id == id }), !note.markdown.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, persist() else { return }
+        guard let note = records.first(where: { $0.id == id && $0.deletedAt == nil }), !note.markdown.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, persist() else { return }
         let started = Date(); var errorCode = "unknown"
         do {
             if let validation = Self.validationError(note) { errorCode = "validation"; throw CaptureFailure(message: validation) }
@@ -269,10 +293,12 @@ struct NotesView: View {
                         NoteEvents.shared.record("search_completed", durationMs: Int(Date().timeIntervalSince(start) * 1000), count: count)
                     }
                 List(selection: $model.selected) {
-                    ForEach(model.records.filter { model.search.isEmpty || ($0.title + $0.markdown + $0.tags).localizedCaseInsensitiveContains(model.search) }) { n in
+                    ForEach(model.records.filter { ($0.deletedAt != nil) == model.showingTrash && (model.search.isEmpty || ($0.title + $0.markdown + $0.tags).localizedCaseInsensitiveContains(model.search)) }) { n in
                         VStack(alignment: .leading) { Text(n.title.isEmpty ? "未命名笔记" : n.title).lineLimit(1); Text(n.syncedAt == nil ? "本地草稿" : "已入档").font(.caption).foregroundStyle(.secondary) }.tag(n.id)
+                            .contextMenu { Button(model.showingTrash ? "恢复笔记" : "移入本机回收站") { model.setTrashed(n.id, trashed: !model.showingTrash) }.disabled(model.busy) }
                     }
                 }
+                Toggle("本机回收站", isOn: $model.showingTrash).onChange(of: model.showingTrash) { _, _ in model.selected = nil }
                 Button("重试未同步笔记") { model.enqueue(model.records.filter {$0.wantsSync && $0.syncedAt == nil}.map(\.id)) }.disabled(model.busy)
             }.padding(12).frame(width: 180)
             Divider()
@@ -283,8 +309,9 @@ struct NotesView: View {
                     HStack {
                         Button("插入剪贴板图片") { model.addImage(id:id) }
                         Button("复制为新笔记") { model.duplicate(n) }
+                        Button(n.deletedAt == nil ? "移入回收站" : "恢复笔记") { model.setTrashed(id, trashed: n.deletedAt == nil) }.disabled(model.busy)
                         Spacer()
-                        Button(model.busy ? "同步中…" : "保存并同步") { model.enqueue([id]) }.disabled(model.busy || n.markdown.isEmpty).keyboardShortcut("s", modifiers:.command)
+                        Button(model.busy ? "同步中…" : "保存并同步") { model.enqueue([id]) }.disabled(model.busy || n.markdown.isEmpty || n.deletedAt != nil).keyboardShortcut("s", modifiers:.command)
                     }
                     HSplitView {
                         VStack(alignment:.leading) { Text("Markdown 原文").font(.caption); TextEditor(text:field(n, \.markdown)).font(.system(.body,design:.monospaced)) }.frame(minWidth:230)
