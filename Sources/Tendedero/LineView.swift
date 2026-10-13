@@ -77,40 +77,41 @@ struct LineView: View {
                     .disabled(line.scroll >= CGFloat(max(0, line.items.count - line.visibleCount)) * Layout.spacing)
                     Button { CaptureDrawer.shared.show() } label: { Label("搜索与整理", systemImage: "magnifyingglass") }
                     }.frame(width: 170)
-                    Divider().frame(height: 24)
+                    Rectangle().fill(Color.white.opacity(0.18)).frame(width: 1, height: 24)
                     HStack(spacing: 7) {
                         Image(systemName: "plus").font(.system(size: 23, weight: .medium))
                         Text("拖入图片").font(.system(size: 12, weight: .semibold))
                     }
                     .frame(width: 114, height: 42)
-                    .background(Color.accentColor.opacity(0.14), in: RoundedRectangle(cornerRadius: 12))
-                    .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.accentColor.opacity(0.25)))
+                    .foregroundStyle(.white)
+                    .background(Color(red: 0.30, green: 0.35, blue: 0.86), in: RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.white.opacity(0.22)))
                     .overlay(CaptureDrop())
                     .help("拖入图片或文字 · 单击添加 · 双击上传剪贴板图片")
                     .background(GeometryReader { g in Color.clear.preference(key: HitRectsKey.self, value: [dropID: g.frame(in: .named("line"))]) })
-                    Divider().frame(height: 24)
+                    Rectangle().fill(Color.white.opacity(0.18)).frame(width: 1, height: 24)
                     HStack(spacing: 12) {
-                    Text("共 \(line.items.count) 张").font(.system(size: 11)).foregroundStyle(.secondary)
+                    Text("共 \(line.items.count) 张").font(.system(size: 12)).foregroundStyle(Color(white: 0.82))
                     Button { withAnimation(.easeOut(duration: 0.2)) { line.scroll(by: -Layout.spacing * CGFloat(line.visibleCount)) } } label: {
                         Label("更新", systemImage: "chevron.right")
                     }
                     .disabled(line.scroll <= 0)
                     }.frame(width: 170)
                 }
-                .font(.system(size: 12, weight: .medium))
-                .buttonStyle(.borderless)
+                .font(.system(size: 12, weight: .semibold))
+                .buttonStyle(CaptureDockButtonStyle())
                 .padding(.horizontal, 14).padding(.vertical, 7)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 19))
-                .overlay(RoundedRectangle(cornerRadius: 19).strokeBorder(.white.opacity(0.4)))
+                .background(Color(red: 0.16, green: 0.17, blue: 0.20).opacity(0.98), in: RoundedRectangle(cornerRadius: 19))
+                .overlay(RoundedRectangle(cornerRadius: 19).strokeBorder(.white.opacity(0.20)))
                 .shadow(color: .black.opacity(0.14), radius: 10, y: 3)
                 .background(GeometryReader { g in Color.clear.preference(key: HitRectsKey.self, value: [handleID: g.frame(in: .named("line"))]) })
                 .position(x: width / 2, y: Layout.panelHeight - 34)
                 .zIndex(2)
 
                 if importer.message != "＋ 拖入图片" {
-                    Text(importer.message).font(.system(size: 10)).lineLimit(1)
+                    Text(importer.message).font(.system(size: 11, weight: .medium)).foregroundStyle(.white).lineLimit(1)
                         .padding(.horizontal, 10).padding(.vertical, 3)
-                        .background(.regularMaterial, in: Capsule())
+                        .background(Color(white: 0.18).opacity(0.98), in: Capsule())
                         .position(x: width / 2, y: Layout.panelHeight - 72)
                         .allowsHitTesting(false).zIndex(3)
                 }
@@ -189,5 +190,17 @@ struct HitRectsKey: PreferenceKey {
     static var defaultValue: [UUID: CGRect] = [:]
     static func reduce(value: inout [UUID: CGRect], nextValue: () -> [UUID: CGRect]) {
         value.merge(nextValue()) { $1 }
+    }
+}
+
+/// Explicit colors remain readable even when the accessory panel is inactive.
+private struct CaptureDockButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var enabled
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(Color(white: enabled ? 0.97 : 0.58))
+            .padding(.vertical, 9).padding(.horizontal, 5)
+            .background(Color.white.opacity(configuration.isPressed && enabled ? 0.15 : 0), in: RoundedRectangle(cornerRadius: 8))
+            .contentShape(Rectangle())
     }
 }
