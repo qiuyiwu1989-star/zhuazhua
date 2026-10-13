@@ -69,6 +69,7 @@ struct LineView: View {
     var body: some View {
         GeometryReader { geo in
             let width = geo.size.width
+            let displayed = Array(line.items.suffix(max(1, line.visibleCount)))
             ZStack(alignment: .topLeading) {
                 Rope(width: width)
                 Button("搜索与整理  ﹀") { CaptureDrawer.shared.show() }
@@ -88,13 +89,13 @@ struct LineView: View {
                 .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(Color.orange.opacity(0.7), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
                 .overlay(CaptureDrop())
                 .background(GeometryReader { g in Color.clear.preference(key: HitRectsKey.self, value: [dropID: g.frame(in: .named("line"))]) })
-                .position(x: width / 2, y: Layout.ropeY(x: width / 2, width: width) + 62)
+                .position(x: width / 2, y: 96)
                 .zIndex(2)
 
-                ForEach(Array(line.items.enumerated()), id: \.element.id) { index, item in
-                    let x = Layout.x(index: index, count: line.items.count, width: width,
-                                     visible: line.visibleCount, scroll: line.scroll)
-                    let ropeY = Layout.ropeY(x: x, width: width)
+                ForEach(Array(displayed.enumerated()), id: \.element.id) { index, item in
+                    let x = Layout.x(index: index, count: displayed.count, width: width,
+                                     visible: line.visibleCount, scroll: 0)
+                    let ropeY: CGFloat = 34
                     PeggedView(item: item, line: line)
                         .frame(width: Layout.cardWidth, height: Layout.panelHeight - ropeY, alignment: .top)
                         // Photos scrolled towards an edge fade out before they reach it.

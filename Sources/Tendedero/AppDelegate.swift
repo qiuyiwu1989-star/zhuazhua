@@ -610,7 +610,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func updateCapacity() {
-        let usable = panel.frame.width - 200
+        let usable = panel.frame.width - 200 - Layout.cardWidth - 176
         let fits = max(3, min(12, Int(usable / Layout.spacing)))
         line.visibleCount = fits
         line.maxItems = max(fits, Line.keepOnLine ?? fits)

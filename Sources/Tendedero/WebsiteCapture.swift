@@ -22,6 +22,7 @@ struct CaptureRecord: Codable, Identifiable {
     var digest: String?
     var noteDigest: String?
     var error: String?
+    var organizedAt: [Date]?
     var ocrText: String?
     var ocrError: String?
 }
@@ -155,12 +156,14 @@ final class WebsiteCapture: ObservableObject {
     @discardableResult
     func edit(_ id: String, note: String, tags: String) -> Bool {
         guard let i = records.firstIndex(where: { $0.id == id }), !active.contains(id), records[i].state != "已保存" else { return false }
+        guard records[i].note != note || records[i].tags != tags else { return true }
         let previous = records[i]
         if records[i].note != note || records[i].tags != tags { records[i].noteDigest = nil }
         records[i].note = note; records[i].tags = tags
+        records[i].organizedAt = (records[i].organizedAt ?? []) + [Date()]
         do { try persist(); return true } catch { records[i] = previous; message = "保存备注失败：\(error.localizedDescription)"; return false }
     }
-    func status(_ url: URL) -> String? { records.first(where: { $0.source == url.path })?.state }
+    func status(_ url: URL) -> String? { records.first(where: { $0.source == url.path || $0.file == url.path })?.state }
     func request(_ path: String, method: String = "GET", body: Data? = nil,
                  contentType: String = "application/json") async throws -> [String: Any] {
         let url = Self.base.appendingPathComponent(path)

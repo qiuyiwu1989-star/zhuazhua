@@ -41,12 +41,19 @@ struct CaptureDrawerView: View {
     @FocusState private var tagFocused: Bool
     @State private var feedback = ""
     @State private var query = ""
+    @State private var dateFilter = false
+    @State private var day = Date()
+    @State private var timeKind = "收集"
     @State private var batchTag = ""
     @State private var undoTags: [String: String] = [:]
     @State private var selected = Set<String>()
     @State private var preview: CaptureRecord?
     private var matches: [CaptureRecord] {
-        model.records.filter { $0.matchesSearch(query) }
+        model.records.filter { record in
+            record.matchesSearch(query) && (!dateFilter || (timeKind == "收集" ? [record.created] : record.organizedAt ?? []).contains { Calendar.current.isDate($0, inSameDayAs: day) })
+        }.sorted { a, b in
+            (timeKind == "收集" ? a.created : a.organizedAt?.last ?? .distantPast) > (timeKind == "收集" ? b.created : b.organizedAt?.last ?? .distantPast)
+        }
     }
     private var hiddenSelection: Set<String> { selected.subtracting(matches.map(\.id)) }
     var body: some View {
@@ -57,6 +64,14 @@ struct CaptureDrawerView: View {
                 Text("\(matches.count) 张").foregroundStyle(.secondary)
                 Button("展开 / 半屏", systemImage: "arrow.up.left.and.arrow.down.right") { CaptureDrawer.shared.toggleSize() }
                 Button("收起", systemImage: "chevron.up") { CaptureDrawer.shared.hide() }.keyboardShortcut(.escape, modifiers: [])
+            }
+            HStack {
+                Toggle("按日期查看", isOn: $dateFilter)
+                Picker("时间", selection: $timeKind) { Text("收集时间").tag("收集"); Text("整理时间").tag("整理") }.frame(width: 175)
+                DatePicker("日期", selection: $day, displayedComponents: .date).disabled(!dateFilter)
+                Button("今天") { day = Date(); dateFilter = true }
+                Spacer()
+                Text(timeKind == "整理" ? "整理记录从此版本开始；修改备注或标签时记录" : "按首次收进爪爪的时间查看").font(.caption).foregroundStyle(.secondary)
             }
             HStack {
                 Text(selected.isEmpty ? "双击预览 · 勾选后批量整理" : "已选择 \(selected.count) 张")
@@ -73,7 +88,7 @@ struct CaptureDrawerView: View {
                 HStack {
                     Text("已选中 \(hiddenSelection.count) 张不在当前结果中；请先确定批量操作范围。")
                     Button("仅保留当前结果") { selected.subtract(hiddenSelection) }
-                    Button("清除搜索查看选择") { query = "" }
+                    Button("清除筛选查看选择") { query = ""; dateFilter = false }
                 }.font(.callout).foregroundStyle(.orange)
             }
             if !feedback.isEmpty { Text(feedback).font(.caption).foregroundStyle(.secondary) }
@@ -119,6 +134,8 @@ struct CaptureDrawerView: View {
                                     Button("预览") { preview = record }
                                 }.font(.caption)
                                 if !record.tags.isEmpty { Text(record.tags).font(.caption).foregroundStyle(.teal).lineLimit(2) }
+                                Text("收集：" + record.created.formatted(date: .abbreviated, time: .shortened)).font(.caption2).foregroundStyle(.secondary)
+                                if let last = record.organizedAt?.last { Text("整理：" + last.formatted(date: .abbreviated, time: .shortened)).font(.caption2).foregroundStyle(.secondary) }
                                 Text(model.ocrStatus(record)).font(.caption2).foregroundStyle(.secondary)
                                 if let excerpt = record.searchExcerpt(query) { Text(excerpt).font(.caption).lineLimit(2).help(excerpt) }
                             }

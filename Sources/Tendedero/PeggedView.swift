@@ -21,7 +21,7 @@ struct PeggedView: View {
                 .zIndex(1)
             card
         }
-        .rotationEffect(.degrees(swing + item.tilt), anchor: .top)
+        .rotationEffect(.degrees(0), anchor: .top)
         .offset(y: arrived ? 0 : -46)
         // The fall itself is drawn over the whole screen by CaptureFlight, so
         // the card here just steps aside at once.
@@ -37,10 +37,7 @@ struct PeggedView: View {
     /// The photo fits inside the card area keeping its proportions, so the
     /// white border hugs it whether the screenshot is wide or tall.
     static func photoSize(for size: CGSize) -> CGSize {
-        let maxW = Layout.cardWidth - 14, maxH = Layout.photoMaxHeight
-        guard size.width > 0, size.height > 0 else { return CGSize(width: maxW, height: maxH) }
-        let scale = min(maxW / size.width, maxH / size.height)
-        return CGSize(width: size.width * scale, height: size.height * scale)
+        CGSize(width: Layout.cardWidth - 14, height: Layout.photoMaxHeight)
     }
 
     /// The card around the photo: the photo plus the glass inset.
@@ -58,6 +55,7 @@ struct PeggedView: View {
         Image(nsImage: item.thumb)
             .resizable()
             .interpolation(.high)
+            .scaledToFit()
             .frame(width: photoSize.width, height: photoSize.height)
             // Concentric corners: the photo's radius is the frame's minus the
             // inset, the way macOS rounds nested shapes.
