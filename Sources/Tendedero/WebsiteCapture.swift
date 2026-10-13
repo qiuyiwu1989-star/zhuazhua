@@ -25,6 +25,8 @@ struct CaptureRecord: Codable, Identifiable {
     var organizedAt: [Date]?
     var ocrText: String?
     var ocrError: String?
+    var vaultSyncedAt: Date?
+    var vaultError: String?
 }
 struct CaptureFailure: LocalizedError {
     let message: String
@@ -52,7 +54,7 @@ final class WebsiteCapture: ObservableObject {
     private var ocrEnabled = false
     @Published var records: [CaptureRecord] = []
     @Published var folders: [CaptureFolder] = []
-    @Published var message = "请登录 qiuyiwu.com，然后读取工作区"
+    @Published var message = "图片已在本地保留；可同步到知行档案收件箱"
     @Published var working = false
     @Published var page = 1
     @Published var selection: String?
@@ -101,15 +103,22 @@ final class WebsiteCapture: ObservableObject {
     func startOCR() {
         ocrEnabled = true
         for record in records where record.ocrText == nil { recognize(record.id) }
+        if VaultSync.shared.automatic {
+            VaultSync.shared.enqueue(records.filter { $0.ocrText != nil && ($0.vaultSyncedAt == nil || $0.vaultError != nil) }.map(\.id), model: self)
+        }
     }
     func recognize(_ id: String) {
         guard ledgerReadable, !recognizing.contains(id), let record = records.first(where: { $0.id == id }) else { return }
         recognizing.insert(id)
         Task {
-            defer { recognizing.remove(id) }
+            defer {
+                recognizing.remove(id)
+                if VaultSync.shared.automatic { VaultSync.shared.enqueue([id], model: self) }
+            }
             do {
                 let text = try await CaptureOCR.shared.recognize(file: record.file)
                 guard let i = records.firstIndex(where: { $0.id == id }) else { return }
+                records[i].vaultSyncedAt = nil
                 records[i].ocrText = text
                 records[i].ocrError = nil
                 try persist()
@@ -149,6 +158,7 @@ final class WebsiteCapture: ObservableObject {
                                          name: url.lastPathComponent, created: Date()), at: 0)
             try persist()
             if ocrEnabled { recognize(id) }
+            else if allowAutomatic && VaultSync.shared.automatic { VaultSync.shared.enqueue([id], model: self) }
             if allowAutomatic && automatic && !selectedFolder.isEmpty { Task { await save(id) } }
             return id
         } catch { message = "本地暂存失败：\(error.localizedDescription)"; return nil }
@@ -159,11 +169,15 @@ final class WebsiteCapture: ObservableObject {
         guard records[i].note != note || records[i].tags != tags else { return true }
         let previous = records[i]
         if records[i].note != note || records[i].tags != tags { records[i].noteDigest = nil }
+        records[i].vaultSyncedAt = nil
         records[i].note = note; records[i].tags = tags
         records[i].organizedAt = (records[i].organizedAt ?? []) + [Date()]
-        do { try persist(); return true } catch { records[i] = previous; message = "保存备注失败：\(error.localizedDescription)"; return false }
+        do { try persist(); if VaultSync.shared.automatic { VaultSync.shared.enqueue([id], model: self) }; return true } catch { records[i] = previous; message = "保存备注失败：\(error.localizedDescription)"; return false }
     }
-    func status(_ url: URL) -> String? { records.first(where: { $0.source == url.path || $0.file == url.path })?.state }
+    func status(_ url: URL) -> String? {
+        guard let r = records.first(where: { $0.source == url.path || $0.file == url.path }) else { return nil }
+        return r.vaultError != nil ? "待同步" : (r.vaultSyncedAt != nil ? "已入档" : r.state)
+    }
     func request(_ path: String, method: String = "GET", body: Data? = nil,
                  contentType: String = "application/json") async throws -> [String: Any] {
         let url = Self.base.appendingPathComponent(path)

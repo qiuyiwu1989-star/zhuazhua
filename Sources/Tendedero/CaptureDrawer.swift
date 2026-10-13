@@ -47,6 +47,7 @@ struct CaptureDrawerView: View {
     @State private var batchTag = ""
     @State private var undoTags: [String: String] = [:]
     @State private var selected = Set<String>()
+    @ObservedObject private var vault = VaultSync.shared
     @State private var preview: CaptureRecord?
     private var matches: [CaptureRecord] {
         model.records.filter { record in
@@ -78,6 +79,9 @@ struct CaptureDrawerView: View {
                 Spacer()
                 Button("预览选中") { preview = matches.first { selected.contains($0.id) } }
                     .disabled(!matches.contains { selected.contains($0.id) })
+                Button("同步到知行档案") { vault.enqueue(Array(selected), model: model) }
+                    .disabled(selected.isEmpty || !hiddenSelection.isEmpty || vault.busy || !vault.connected)
+                Button("收件箱 ↗") { vault.openInbox() }
                 Button("全选结果") { selected = Set(matches.map(\.id)) }
                 Button("取消选择") { selected.removeAll() }.disabled(selected.isEmpty)
                 Button("在访达显示") {
@@ -91,6 +95,7 @@ struct CaptureDrawerView: View {
                     Button("清除筛选查看选择") { query = ""; dateFilter = false }
                 }.font(.callout).foregroundStyle(.orange)
             }
+            Text(vault.message).font(.caption).foregroundStyle(.secondary)
             if !feedback.isEmpty { Text(feedback).font(.caption).foregroundStyle(.secondary) }
             if !selected.isEmpty {
                 HStack {
@@ -136,11 +141,14 @@ struct CaptureDrawerView: View {
                                 if !record.tags.isEmpty { Text(record.tags).font(.caption).foregroundStyle(.teal).lineLimit(2) }
                                 Text("收集：" + record.created.formatted(date: .abbreviated, time: .shortened)).font(.caption2).foregroundStyle(.secondary)
                                 if let last = record.organizedAt?.last { Text("整理：" + last.formatted(date: .abbreviated, time: .shortened)).font(.caption2).foregroundStyle(.secondary) }
+                                Text(record.vaultError != nil ? "同步待重试" : (record.vaultSyncedAt != nil ? "已同步到知行档案" : "仅在本地")).font(.caption2).foregroundStyle(.secondary)
                                 Text(model.ocrStatus(record)).font(.caption2).foregroundStyle(.secondary)
                                 if let excerpt = record.searchExcerpt(query) { Text(excerpt).font(.caption).lineLimit(2).help(excerpt) }
                             }
                             .padding(10).background(selected.contains(record.id) ? Color.accentColor.opacity(0.12) : Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10))
                             .contextMenu {
+                                Button(record.vaultSyncedAt == nil ? "同步到知行档案" : "重新同步到知行档案") { vault.enqueue([record.id], model: model) }
+                                if let error = record.vaultError { Text("同步失败：" + error) }
                                 Button("重新识别文字") { model.recognize(record.id) }
                                     .disabled(model.recognizing.contains(record.id))
                                 Button("查看与编辑备注") { preview = record }

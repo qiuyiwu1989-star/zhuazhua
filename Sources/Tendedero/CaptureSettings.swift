@@ -49,6 +49,7 @@ final class CaptureSettings {
 
 struct CaptureSettingsView: View {
     @ObservedObject var model: WebsiteCapture
+    @ObservedObject private var vault = VaultSync.shared
     @ObservedObject private var shortcuts = CaptureShortcuts.shared
     let initialCollection: Bool
     @State private var note = ""
@@ -139,7 +140,19 @@ struct CaptureSettingsView: View {
     }
     private var website: some View {
         Form {
-            Section("网站连接") {
+            Section("知行档案 · 爪爪收件箱") {
+                Text(vault.connected ? "设备已连接 · 原图保存到 COS" : "设备尚未连接")
+                Toggle("自动同步新采集和后续整理到知行档案", isOn: $vault.automatic).disabled(!vault.connected)
+                HStack {
+                    Button("同步所有待同步图片") {
+                        vault.enqueue(model.records.filter { $0.vaultSyncedAt == nil || $0.vaultError != nil }.map(\.id), model: model)
+                    }.disabled(vault.busy || !vault.connected)
+                    Button("打开知行档案收件箱") { vault.openInbox() }
+                }
+                Text(vault.message).font(.caption).textSelection(.enabled)
+                Text("原图、OCR、备注、标签和采集时间一起同步；同一原图重复提交不会新增记录。网站需登录查看。").font(.caption).foregroundStyle(.secondary)
+            }
+            Section("原有网站工作区（兼容）") {
                 Text("https://qiuyiwu.com").textSelection(.enabled)
                 HStack {
                     Button("登录网站") { CaptureSettings.shared.login() }
