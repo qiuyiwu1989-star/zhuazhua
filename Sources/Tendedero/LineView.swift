@@ -42,21 +42,28 @@ enum Layout {
     /// the newest stays where the last one would hang on a full line, and
     /// `scroll` brings older ones in from the left. Otherwise (a line hung
     /// on a wider screen) they move closer together so none is past the edge.
-    /// Fixed edge-to-edge gaps, measured from the central 152-point drop card.
+    /// Distribute each side across its available width, preserving image sizes.
     static func centeredPositions(widths: [CGFloat], width: CGFloat) -> [CGFloat] {
         let split = widths.count / 2
         var positions = Array(repeating: CGFloat.zero, count: widths.count)
-        let gap: CGFloat = 24
-        var left = width / 2 - 76 - gap
-        for i in (0..<split).reversed() {
-            positions[i] = left - widths[i] / 2
-            left -= widths[i] + gap
+        let outer: CGFloat = 40
+        let centerGap: CGFloat = 28
+        func distribute(_ range: Range<Int>, start: CGFloat, end: CGFloat) {
+            guard !range.isEmpty else { return }
+            let total = range.reduce(CGFloat.zero) { $0 + widths[$1] }
+            if range.count == 1 {
+                positions[range.lowerBound] = (start + end) / 2
+                return
+            }
+            let gap = max(24, (end - start - total) / CGFloat(range.count - 1))
+            var cursor = start
+            for i in range {
+                positions[i] = cursor + widths[i] / 2
+                cursor += widths[i] + gap
+            }
         }
-        var right = width / 2 + 76 + gap
-        for i in split..<widths.count {
-            positions[i] = right + widths[i] / 2
-            right += widths[i] + gap
-        }
+        distribute(0..<split, start: outer, end: width / 2 - 76 - centerGap)
+        distribute(split..<widths.count, start: width / 2 + 76 + centerGap, end: width - outer)
         return positions
     }
 
