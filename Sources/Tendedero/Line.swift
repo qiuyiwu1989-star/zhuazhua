@@ -212,6 +212,15 @@ final class Line: ObservableObject {
     }
 
     /// Moves along a line that holds more than fit, from a scroll gesture.
+    func orderByCollectionDate() {
+        let records = WebsiteCapture.shared.records
+        var dates: [String: Date] = [:]
+        for record in records { dates[record.file] = record.created; dates[record.source] = record.created }
+        items.sort { (dates[$0.url.path] ?? .distantPast) < (dates[$1.url.path] ?? .distantPast) }
+        scroll = 0
+        save()
+    }
+
     func scroll(by delta: CGFloat) {
         let most = CGFloat(max(0, items.count - visibleCount)) * Layout.spacing
         let next = min(most, max(0, scroll + delta))

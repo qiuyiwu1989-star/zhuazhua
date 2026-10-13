@@ -77,7 +77,14 @@ struct LineView: View {
             let displayed = line.items
             ZStack(alignment: .topLeading) {
                 Rope(width: width)
-                Button("搜索与整理  ﹀") { CaptureDrawer.shared.show() }
+                HStack(spacing: 12) {
+                    Button("← 更早") { withAnimation(.easeOut(duration: 0.2)) { line.scroll(by: Layout.spacing * CGFloat(line.visibleCount)) } }
+                        .disabled(line.scroll >= CGFloat(max(0, line.items.count - line.visibleCount)) * Layout.spacing)
+                    Button("搜索与整理  ﹀") { CaptureDrawer.shared.show() }
+                    Button("更新 →") { withAnimation(.easeOut(duration: 0.2)) { line.scroll(by: -Layout.spacing * CGFloat(line.visibleCount)) } }
+                        .disabled(line.scroll <= 0)
+                    Text("共 \(line.items.count) 张").font(.caption).foregroundStyle(.secondary)
+                }
                     .buttonStyle(.borderedProminent)
                     .background(GeometryReader { g in Color.clear.preference(key: HitRectsKey.self, value: [handleID: g.frame(in: .named("line"))]) })
                     .simultaneousGesture(DragGesture(minimumDistance: 12).onEnded { value in if value.translation.height > 20 { CaptureDrawer.shared.show() } })

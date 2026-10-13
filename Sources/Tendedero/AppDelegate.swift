@@ -64,6 +64,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        if !UserDefaults.standard.bool(forKey: "scrollHistoryEnabled") {
+            Line.keepOnLine = 100
+        }
         let host = NSHostingView(rootView: LineView(line: line))
         host.sizingOptions = []
         panel = LinePanel(content: host)
@@ -88,6 +91,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 }
             }
             UserDefaults.standard.set(true, forKey: "originalSpacingRestored")
+        }
+        if !UserDefaults.standard.bool(forKey: "scrollHistoryEnabled") {
+            for record in WebsiteCapture.shared.records.prefix(100).reversed() {
+                if !line.items.contains(where: { $0.url.path == record.source || $0.url.path == record.file }) {
+                    _ = line.hang(URL(fileURLWithPath: record.file), quietly: true)
+                }
+            }
+            line.orderByCollectionDate()
+            UserDefaults.standard.set(true, forKey: "scrollHistoryEnabled")
         }
         WebsiteCapture.shared.startOCR()
         WebsiteCapture.shared.onSettings = { CaptureSettings.shared.show() }
