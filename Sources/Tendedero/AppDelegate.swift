@@ -76,6 +76,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         clipboardWatcher = ClipboardWatcher { [weak self] url in self?.hangCapture(url) }
         if ClipboardWatcher.isEnabled { clipboardWatcher.start() }
 
+        CaptureImport.shared.onImported = { [weak self] url in self?.hangCapture(url) }
         registerShortcut()
 
         for item in line.items { WebsiteCapture.shared.stage(item.url, allowAutomatic: false) }

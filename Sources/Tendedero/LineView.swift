@@ -55,6 +55,8 @@ enum Layout {
 
 struct LineView: View {
     @ObservedObject var line: Line
+    @ObservedObject private var importer = CaptureImport.shared
+    private let dropID = UUID(uuidString: "11223344-0000-0000-0000-000000000002")!
     private let handleID = UUID(uuidString: "11223344-0000-0000-0000-000000000001")!
 
     var body: some View {
@@ -67,6 +69,15 @@ struct LineView: View {
                     .background(GeometryReader { g in Color.clear.preference(key: HitRectsKey.self, value: [handleID: g.frame(in: .named("line"))]) })
                     .simultaneousGesture(DragGesture(minimumDistance: 12).onEnded { value in if value.translation.height > 20 { CaptureDrawer.shared.show() } })
                     .position(x: width / 2, y: Layout.panelHeight - 20)
+
+                Text(importer.message)
+                    .font(.system(size: 12, weight: .semibold))
+                    .lineLimit(1)
+                    .padding(.horizontal, 12).frame(width: 260, height: 32)
+                    .background(.regularMaterial, in: Capsule())
+                    .overlay(CaptureDrop())
+                    .background(GeometryReader { g in Color.clear.preference(key: HitRectsKey.self, value: [dropID: g.frame(in: .named("line"))]) })
+                    .position(x: min(width - 140, width / 2 + 220), y: Layout.panelHeight - 20)
 
                 if line.items.isEmpty {
                     Hint()
