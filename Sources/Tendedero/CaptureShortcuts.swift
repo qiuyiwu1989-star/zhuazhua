@@ -3,7 +3,7 @@ import Carbon
 import Combine
 
 enum CaptureAction: String, CaseIterable, Identifiable {
-    case region, line, collection, settings
+    case region, line, collection, settings, note
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -11,6 +11,7 @@ enum CaptureAction: String, CaseIterable, Identifiable {
         case .line: return "显示 / 隐藏收纳栏"
         case .collection: return "打开爪爪搜索"
         case .settings: return "打开设置"
+        case .note: return "新建图文笔记"
         }
     }
     var standard: Shortcut? {
@@ -18,7 +19,7 @@ enum CaptureAction: String, CaseIterable, Identifiable {
         case .line: return .standard
         case .region: return Shortcut(keyCode: kVK_ANSI_S, modifiers: [.control, .option], key: "s")
         case .collection: return Shortcut(keyCode: kVK_ANSI_C, modifiers: [.control, .option], key: "c")
-        case .settings: return nil
+        case .settings, .note: return nil
         }
     }
     var storageKey: String { self == .line ? "shortcut" : "captureShortcut." + rawValue }
@@ -50,7 +51,8 @@ final class CaptureShortcuts: ObservableObject {
         callbacks = [.line: line,
                      .region: { [weak self] in self?.takeScreenshot() },
                      .collection: { CaptureDrawer.shared.show() },
-                     .settings: { CaptureSettings.shared.show() }]
+                     .settings: { CaptureSettings.shared.show() },
+                     .note: { Notes.shared.create() }]
         if localMonitor == nil {
             localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
                 let handled = MainActor.assumeIsolated {

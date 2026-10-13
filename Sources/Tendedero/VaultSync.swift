@@ -38,6 +38,30 @@ final class VaultSync: ObservableObject {
             message = failures == 0 ? "已同步 \(successes) 张到知行档案收件箱" : "已同步 \(successes) 张，\(failures) 张待重试；本地原图保留"
         }
     }
+    /// Notes keep attachments outside the screenshot ledger until explicitly submitted.
+    /// The server preserves any existing image metadata for this idempotent upload.
+    func syncAttachment(_ digest: String, file: URL) async throws {
+        let bytes = try Data(contentsOf: file)
+        guard bytes.count <= 64 * 1024 * 1024,
+              SHA256.hash(data: bytes).map({ String(format: "%02x", $0) }).joined() == digest else {
+            throw CaptureFailure(message: "附件校验失败或超过 64 MB，已停止上传")
+        }
+        let token = try String(contentsOf: Self.tokenURL, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !token.isEmpty else { throw CaptureFailure(message: "尚未连接知行档案设备") }
+        let now = ISO8601DateFormatter().string(from: Date())
+        let payload: [String: Any] = ["digest": digest, "image": bytes.base64EncodedString(), "name": "图片附件.png",
+            "note": "", "tags": "", "ocr": "", "collectedAt": now, "modifiedAt": now, "attachmentOnly": true]
+        var request = URLRequest(url: URL(string: "https://qiuyiwu.com/api/zhuazhua/captures")!)
+        request.httpMethod = "POST"; request.setValue("Bearer " + token, forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: payload)
+        let (data, response) = try await session.data(for: request)
+        let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+        guard (response as? HTTPURLResponse)?.statusCode == 200, json?["ok"] as? Bool == true,
+              json?["digest"] as? String == digest, json?["storage"] as? String == "cos" else {
+            throw CaptureFailure(message: "图片附件同步失败；本地原件保留，请重试")
+        }
+    }
     func sync(_ id: String, model: WebsiteCapture) async -> Bool {
         guard let record = model.records.first(where: { $0.id == id }) else { return false }
         do {

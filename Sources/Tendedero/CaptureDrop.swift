@@ -25,6 +25,7 @@ final class CaptureImport: ObservableObject {
         } catch { message = "导入失败，请重试" }
     }
     func file(_ url: URL) {
+        if ["md", "txt", "markdown"].contains(url.pathExtension.lowercased()) { Notes.shared.importFile(url); return }
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
         guard let size = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
@@ -36,7 +37,8 @@ final class CaptureImport: ObservableObject {
             for url in urls { file(url) }; return true
         }
         if let image = NSImage(pasteboard: board), let data = image.tiffRepresentation { accept(data); return true }
-        message = "未收到图片内容：请先复制图片，再点这里粘贴"
+        if let text = board.string(forType: .string), !text.isEmpty { Notes.shared.create(text); return true }
+        message = "剪贴板没有可导入的图片或文字"
         return false
     }
     func choose() {
@@ -55,7 +57,7 @@ struct CaptureDrop: NSViewRepresentable {
 final class DropView: NSView {
     override init(frame: NSRect) {
         super.init(frame: frame)
-        registerForDraggedTypes([.fileURL, .tiff, .png, .URL])
+        registerForDraggedTypes([.fileURL, .tiff, .png, .URL, .string])
     }
     required init?(coder: NSCoder) { fatalError() }
     override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
@@ -65,12 +67,20 @@ final class DropView: NSView {
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool { CaptureImport.shared.paste(sender.draggingPasteboard) }
     override func mouseDown(with event: NSEvent) {
         let menu = NSMenu()
+        for (title, action) in [("新建图文笔记", #selector(newNote)), ("粘贴文字", #selector(pasteText)), ("导入 Markdown / TXT…", #selector(importText)), ("打开我的笔记", #selector(openNotes))] {
+            let item = NSMenuItem(title: title, action: action, keyEquivalent: ""); item.target = self; menu.addItem(item)
+        }
+        menu.addItem(.separator())
         let paste = NSMenuItem(title: "粘贴剪贴板图片", action: #selector(pasteImage), keyEquivalent: "")
         paste.target = self; menu.addItem(paste)
         let choose = NSMenuItem(title: "选择图片文件…", action: #selector(chooseImage), keyEquivalent: "")
         choose.target = self; menu.addItem(choose)
         NSMenu.popUpContextMenu(menu, with: event, for: self)
     }
+    @objc private func newNote() { Notes.shared.create() }
+    @objc private func pasteText() { Notes.shared.pasteText() }
+    @objc private func importText() { Notes.shared.choose() }
+    @objc private func openNotes() { Notes.shared.show() }
     @objc private func pasteImage() { _ = CaptureImport.shared.paste(.general) }
     @objc private func chooseImage() { CaptureImport.shared.choose() }
 }

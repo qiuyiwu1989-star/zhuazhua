@@ -50,6 +50,7 @@ final class CaptureSettings {
 struct CaptureSettingsView: View {
     @ObservedObject var model: WebsiteCapture
     @ObservedObject private var vault = VaultSync.shared
+    @ObservedObject private var events = NoteEvents.shared
     @ObservedObject private var shortcuts = CaptureShortcuts.shared
     let initialCollection: Bool
     @State private var note = ""
@@ -70,6 +71,7 @@ struct CaptureSettingsView: View {
                 Image(systemName: "tray.and.arrow.down.fill").font(.title).foregroundStyle(.teal)
                 VStack(alignment: .leading) {
                     Text("爪爪").font(.title2.bold())
+
                     Text("桌面暂存，保存到你的 qiuyiwu.com 工作区").foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -204,6 +206,10 @@ struct CaptureSettingsView: View {
 
     private var preferences: some View {
         Form {
+            Section("体验改进") {
+                Toggle("发送匿名使用计数", isOn: $events.enabled)
+                Text("默认关闭。仅统计笔记打开、导入和同步结果，不发送正文、图片、路径、来源或搜索词。").font(.caption).foregroundStyle(.secondary)
+            }
             Section("采集") {
                 Toggle("接管系统截图保存位置", isOn: $inbox)
                 Toggle("收集剪贴板中的图片", isOn: $clipboard)

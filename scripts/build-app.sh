@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 CONFIG="${1:-release}"
-APP="build/ZhuaZhua.app"
+APP="${APP_OUTPUT:-build/ZhuaZhua.app}"
 VERSION="0.1.0"
 
 # Builds one architecture and prints the binary's path.
