@@ -37,7 +37,10 @@ struct PeggedView: View {
     /// The photo fits inside the card area keeping its proportions, so the
     /// white border hugs it whether the screenshot is wide or tall.
     static func photoSize(for size: CGSize) -> CGSize {
-        CGSize(width: Layout.cardWidth - 14, height: Layout.photoMaxHeight)
+        let maxW = Layout.cardWidth - 14, maxH = Layout.photoMaxHeight
+        guard size.width > 0, size.height > 0 else { return CGSize(width: maxW, height: maxH) }
+        let scale = min(maxW / size.width, maxH / size.height)
+        return CGSize(width: size.width * scale, height: size.height * scale)
     }
 
     /// The card around the photo: the photo plus the glass inset.

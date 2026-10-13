@@ -42,6 +42,24 @@ enum Layout {
     /// the newest stays where the last one would hang on a full line, and
     /// `scroll` brings older ones in from the left. Otherwise (a line hung
     /// on a wider screen) they move closer together so none is past the edge.
+    /// Fixed edge-to-edge gaps, measured from the central 152-point drop card.
+    static func centeredPositions(widths: [CGFloat], width: CGFloat) -> [CGFloat] {
+        let split = widths.count / 2
+        var positions = Array(repeating: CGFloat.zero, count: widths.count)
+        let gap: CGFloat = 24
+        var left = width / 2 - 76 - gap
+        for i in (0..<split).reversed() {
+            positions[i] = left - widths[i] / 2
+            left -= widths[i] + gap
+        }
+        var right = width / 2 + 76 + gap
+        for i in split..<widths.count {
+            positions[i] = right + widths[i] / 2
+            right += widths[i] + gap
+        }
+        return positions
+    }
+
     static func x(index: Int, count: Int, width: CGFloat, visible: Int, scroll: CGFloat) -> CGFloat {
         let gap = cardWidth + 176
         let available = max(240, width - gap)
@@ -70,6 +88,7 @@ struct LineView: View {
         GeometryReader { geo in
             let width = geo.size.width
             let displayed = Array(line.items.suffix(max(1, line.visibleCount)))
+            let positions = Layout.centeredPositions(widths: displayed.map { PeggedView.cardSize(for: $0.thumb.size).width }, width: width)
             ZStack(alignment: .topLeading) {
                 Rope(width: width)
                 Button("搜索与整理  ﹀") { CaptureDrawer.shared.show() }
@@ -93,8 +112,7 @@ struct LineView: View {
                 .zIndex(2)
 
                 ForEach(Array(displayed.enumerated()), id: \.element.id) { index, item in
-                    let x = Layout.x(index: index, count: displayed.count, width: width,
-                                     visible: line.visibleCount, scroll: 0)
+                    let x = positions[index]
                     let ropeY: CGFloat = 34
                     PeggedView(item: item, line: line)
                         .frame(width: Layout.cardWidth, height: Layout.panelHeight - ropeY, alignment: .top)
