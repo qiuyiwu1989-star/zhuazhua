@@ -1,0 +1,410 @@
+{
+  "upstream": "https://github.com/alejandrobujan/tendedero",
+  "ref_at_download": "main",
+  "download_date": "2026-10-12",
+  "upstream_tree_sha": "71b54fd8c571c5ea8c514b56103dfa6bf08a8e74",
+  "method": "GitHub blob API; each downloaded file verified against Git blob SHA-1",
+  "omitted": "docs/images/ promotional images and Git history",
+  "files": [
+    {
+      "path": ".github/ISSUE_TEMPLATE/bug_report.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e130d33b5baefc17295c10c2034236170a635daa",
+      "size": 1162,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/e130d33b5baefc17295c10c2034236170a635daa"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/config.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0086358db1eb971c0cfa8739c27518bbc18a5ff4",
+      "size": 27,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/0086358db1eb971c0cfa8739c27518bbc18a5ff4"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/feature_request.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "984d47a0e24c8b6087412c1cfa4c0d478c89b8b9",
+      "size": 563,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/984d47a0e24c8b6087412c1cfa4c0d478c89b8b9"
+    },
+    {
+      "path": ".github/pull_request_template.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5ecf1f174cf8d1e7d1e4f706c2f561b06415f17e",
+      "size": 459,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/5ecf1f174cf8d1e7d1e4f706c2f561b06415f17e"
+    },
+    {
+      "path": ".gitignore",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8b80f2fcda29b6209956a749aea6c86320621316",
+      "size": 47,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/8b80f2fcda29b6209956a749aea6c86320621316"
+    },
+    {
+      "path": "LICENSE",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "16ccaec5c6a09534a003259a62ef32367e2bb668",
+      "size": 1579,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/16ccaec5c6a09534a003259a62ef32367e2bb668"
+    },
+    {
+      "path": "Package.swift",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3d927e3da306fb0cfcf6ba9558e5e13f24a1c581",
+      "size": 383,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/3d927e3da306fb0cfcf6ba9558e5e13f24a1c581"
+    },
+    {
+      "path": "README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "28684cff03c94374e8fbf4be121c23d3159af5aa",
+      "size": 7423,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/28684cff03c94374e8fbf4be121c23d3159af5aa"
+    },
+    {
+      "path": "Sources/Tendedero/AppDelegate.swift",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "017b3e1216c80349a40f985219d4c182f7c5c7a9",
+      "size": 34216,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/017b3e1216c80349a40f985219d4c182f7c5c7a9"
+    },
+    {
+      "path": "Sources/Tendedero/CaptureFlight.swift",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "227efa0457c95443b84e4b0af7f8a80aa0516cf7",
+      "size": 9938,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/227efa0457c95443b84e4b0af7f8a80aa0516cf7"
+    },
+    {
+      "path": "Sources/Tendedero/ClipboardWatcher.swift",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f18b209e82d91897fc2b3e6489e70f5b4c380704",
+      "size": 5113,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/f18b209e82d91897fc2b3e6489e70f5b4c380704"
+    },
+    {
+      "path": "Sources/Tendedero/FullScreen.swift",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "aa1ce61d12a88d40cb6d816e81c3f7c8ab20adf8",
+      "size": 2311,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/aa1ce61d12a88d40cb6d816e81c3f7c8ab20adf8"
+    },
+    {
+      "path": "Sources/Tendedero/GrabArea.swift",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ccc90b2651f3c159dadc0e4c3537683f0e41b329",
+      "size": 9337,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/ccc90b2651f3c159dadc0e4c3537683f0e41b329"
+    },
+    {
+      "path": "Sources/Tendedero/HotKey.swift",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6ed72ab7ed68ba1262d5b5dc8ac2e722bfbe81fe",
+      "size": 6711,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/6ed72ab7ed68ba1262d5b5dc8ac2e722bfbe81fe"
+    },
+    {
+      "path": "Sources/Tendedero/Inbox.swift",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b2598329cfe3d509bd65fa0a05ccf8c3f3972eee",
+      "size": 5703,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/b2598329cfe3d509bd65fa0a05ccf8c3f3972eee"
+    },
+    {
+      "path": "Sources/Tendedero/Line.swift",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6f69aee9725dccf1a418ecdfe49327684b01ed6f",
+      "size": 15050,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/6f69aee9725dccf1a418ecdfe49327684b01ed6f"
+    },
+    {
+      "path": "Sources/Tendedero/LinePanel.swift",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "22ffc44ea9275836b9e35d0984680ceb980df69a",
+      "size": 2136,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/22ffc44ea9275836b9e35d0984680ceb980df69a"
+    },
+    {
+      "path": "Sources/Tendedero/LineView.swift",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "359bfe45ef17921e32192c62dc8ce09235a45ea3",
+      "size": 6062,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/359bfe45ef17921e32192c62dc8ce09235a45ea3"
+    },
+    {
+      "path": "Sources/Tendedero/Localization.swift",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8b6f9a5e03d0d69b53ed3de10b00bb1a81eccfc8",
+      "size": 468,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/8b6f9a5e03d0d69b53ed3de10b00bb1a81eccfc8"
+    },
+    {
+      "path": "Sources/Tendedero/Markup.swift",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "db126e623f3ce1e26717969a37e37329b4458149",
+      "size": 4093,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/db126e623f3ce1e26717969a37e37329b4458149"
+    },
+    {
+      "path": "Sources/Tendedero/PeggedView.swift",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3de7c7f2807f9fbcea5a3239d84f205c60c9f2a2",
+      "size": 9333,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/3de7c7f2807f9fbcea5a3239d84f205c60c9f2a2"
+    },
+    {
+      "path": "Sources/Tendedero/QuickLook.swift",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f776a5f2efd7da94b779ccae3115d2606b3d169c",
+      "size": 2420,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/f776a5f2efd7da94b779ccae3115d2606b3d169c"
+    },
+    {
+      "path": "Sources/Tendedero/Resources/az.lproj/Localizable.strings",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b0a8259ccc8470e71078632731cb325f1616e98c",
+      "size": 3522,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/b0a8259ccc8470e71078632731cb325f1616e98c"
+    },
+    {
+      "path": "Sources/Tendedero/Resources/en.lproj/Localizable.strings",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c6933b02f221c8d34176eb7281cf6294e0f5076b",
+      "size": 3258,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/c6933b02f221c8d34176eb7281cf6294e0f5076b"
+    },
+    {
+      "path": "Sources/Tendedero/Resources/es.lproj/Localizable.strings",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a6420d78b6cea1e67ac241a108ce77a4cb7b6d16",
+      "size": 3294,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/a6420d78b6cea1e67ac241a108ce77a4cb7b6d16"
+    },
+    {
+      "path": "Sources/Tendedero/Resources/fr.lproj/Localizable.strings",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6eb98b3af991a33b64aac3cca27ee2aed2a3d2d1",
+      "size": 3491,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/6eb98b3af991a33b64aac3cca27ee2aed2a3d2d1"
+    },
+    {
+      "path": "Sources/Tendedero/Resources/gl.lproj/Localizable.strings",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "31ce6cbb2d16bc75a3732f60b27721601a99bc8d",
+      "size": 3252,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/31ce6cbb2d16bc75a3732f60b27721601a99bc8d"
+    },
+    {
+      "path": "Sources/Tendedero/Resources/ja.lproj/Localizable.strings",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8352d0d1ddd3eb0f15fa375fc4795f7afce214ec",
+      "size": 3817,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/8352d0d1ddd3eb0f15fa375fc4795f7afce214ec"
+    },
+    {
+      "path": "Sources/Tendedero/Resources/ko.lproj/Localizable.strings",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "35a765952625d68c085ad7bc94436c5a7bcc2982",
+      "size": 3432,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/35a765952625d68c085ad7bc94436c5a7bcc2982"
+    },
+    {
+      "path": "Sources/Tendedero/Resources/pt-BR.lproj/Localizable.strings",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "cbb7979f525eb5399fdb29f093970c506223b488",
+      "size": 3282,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/cbb7979f525eb5399fdb29f093970c506223b488"
+    },
+    {
+      "path": "Sources/Tendedero/Resources/tr.lproj/Localizable.strings",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8b85c253ea751c29af43c8033e5e0c11e785ab95",
+      "size": 3242,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/8b85c253ea751c29af43c8033e5e0c11e785ab95"
+    },
+    {
+      "path": "Sources/Tendedero/Resources/zh-Hans.lproj/Localizable.strings",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9ca0dafe529ada81eb5a4363d9ac69515198d36d",
+      "size": 3032,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/9ca0dafe529ada81eb5a4363d9ac69515198d36d"
+    },
+    {
+      "path": "Sources/Tendedero/ScreenshotWatcher.swift",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "23c2371013cbcf6b4dbea74f8b94a429e6ae0baf",
+      "size": 8096,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/23c2371013cbcf6b4dbea74f8b94a429e6ae0baf"
+    },
+    {
+      "path": "Sources/Tendedero/Trim.swift",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "6f85623b9d676e5e9e724e94bbe19244e93aacc7",
+      "size": 4293,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/6f85623b9d676e5e9e724e94bbe19244e93aacc7"
+    },
+    {
+      "path": "Sources/Tendedero/main.swift",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7363ca6bc4985337f67f411f4826072605e66c03",
+      "size": 229,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/7363ca6bc4985337f67f411f4826072605e66c03"
+    },
+    {
+      "path": "docs/i18n/README.az.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5b446c70c346ac049624651f433b65af1e54862c",
+      "size": 8480,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/5b446c70c346ac049624651f433b65af1e54862c"
+    },
+    {
+      "path": "docs/i18n/README.es.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "14a852098c3fbacb0904a6adc6c4072505e94b7a",
+      "size": 8103,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/14a852098c3fbacb0904a6adc6c4072505e94b7a"
+    },
+    {
+      "path": "docs/i18n/README.fr.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "76f5775e2a961ed384b5c907515ed503331dbe32",
+      "size": 8371,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/76f5775e2a961ed384b5c907515ed503331dbe32"
+    },
+    {
+      "path": "docs/i18n/README.gl.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c845aa0ca0e8d6533263d486535adf4c373a51c6",
+      "size": 7932,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/c845aa0ca0e8d6533263d486535adf4c373a51c6"
+    },
+    {
+      "path": "docs/i18n/README.ja.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "47944ea9beeaf09e7c8fc6f72a278a671a45421b",
+      "size": 9715,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/47944ea9beeaf09e7c8fc6f72a278a671a45421b"
+    },
+    {
+      "path": "docs/i18n/README.ko.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "949aef6e2bc5c4ebd5271e4795f627b3d666c982",
+      "size": 8747,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/949aef6e2bc5c4ebd5271e4795f627b3d666c982"
+    },
+    {
+      "path": "docs/i18n/README.pt-BR.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "003eb454661ed97a0dded1331e823ba29f0f0e2f",
+      "size": 8100,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/003eb454661ed97a0dded1331e823ba29f0f0e2f"
+    },
+    {
+      "path": "docs/i18n/README.tr.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9b006de60e3361cccfb1a4269260cd0c341ced89",
+      "size": 8293,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/9b006de60e3361cccfb1a4269260cd0c341ced89"
+    },
+    {
+      "path": "docs/i18n/README.zh-Hans.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "be7e5cc305d53054194e04bb5e85209c6ff0bf1e",
+      "size": 7492,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/be7e5cc305d53054194e04bb5e85209c6ff0bf1e"
+    },
+    {
+      "path": "scripts/build-app.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "0f00cec95ee16bc54c1fdd4bce40370497f20b67",
+      "size": 4151,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/0f00cec95ee16bc54c1fdd4bce40370497f20b67"
+    },
+    {
+      "path": "scripts/check-strings.swift",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "be5f51410d1cf7e907b412cbc57d7386ef8ab6c0",
+      "size": 2595,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/be5f51410d1cf7e907b412cbc57d7386ef8ab6c0"
+    },
+    {
+      "path": "scripts/make-dmg-background.swift",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ac5dfefcf3d9dfec61f6dc836a9ca6781c6c022e",
+      "size": 2506,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/ac5dfefcf3d9dfec61f6dc836a9ca6781c6c022e"
+    },
+    {
+      "path": "scripts/make-dmg.sh",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "a963a69c9ef2ef3cf2dddc466d19c3c7d5f8151a",
+      "size": 4252,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/a963a69c9ef2ef3cf2dddc466d19c3c7d5f8151a"
+    },
+    {
+      "path": "scripts/make-icon.swift",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b7eded95a064bfc0a3be6b6b1a8ea8c85d023452",
+      "size": 7204,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/b7eded95a064bfc0a3be6b6b1a8ea8c85d023452"
+    },
+    {
+      "path": "scripts/make-readme-art.swift",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e5aecb8783f27547adfa9cfc144fc20a3f76a6c8",
+      "size": 27344,
+      "url": "https://api.github.com/repos/alejandrobujan/tendedero/git/blobs/e5aecb8783f27547adfa9cfc144fc20a3f76a6c8"
+    }
+  ]
+}
