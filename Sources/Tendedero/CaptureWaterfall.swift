@@ -6,6 +6,8 @@ import ImageIO
 final class CaptureWaterfall {
     static let shared = CaptureWaterfall()
     private var panel: NSPanel?
+    private var localClickMonitor: Any?
+    private var globalClickMonitor: Any?
     func show() {
         guard let screen = LinePanel.screenUnderPointer() else { return }
         if panel == nil {
@@ -22,8 +24,28 @@ final class CaptureWaterfall {
         panel?.setFrame(NSRect(x: area.minX + 12, y: area.minY + 12, width: area.width - 24, height: height - 12), display: true)
         NSApp.activate(ignoringOtherApps: true)
         panel?.makeKeyAndOrderFront(nil)
+        installOutsideClickMonitors()
     }
-    func hide() { panel?.orderOut(nil) }
+    func hide() {
+        panel?.orderOut(nil)
+        if let monitor = localClickMonitor { NSEvent.removeMonitor(monitor) }
+        if let monitor = globalClickMonitor { NSEvent.removeMonitor(monitor) }
+        localClickMonitor = nil
+        globalClickMonitor = nil
+    }
+    private func installOutsideClickMonitors() {
+        guard localClickMonitor == nil else { return }
+        let clicks: NSEvent.EventTypeMask = [.leftMouseDown, .rightMouseDown, .otherMouseDown]
+        localClickMonitor = NSEvent.addLocalMonitorForEvents(matching: clicks) { [weak self] event in
+            guard let self, let panel = self.panel, panel.isVisible else { return event }
+            if event.window !== panel && !panel.frame.contains(NSEvent.mouseLocation) { self.hide() }
+            return event // Preserve the clicked control's original action.
+        }
+        globalClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: clicks) { [weak self] _ in
+            guard let self, let panel = self.panel, panel.isVisible else { return }
+            if !panel.frame.contains(NSEvent.mouseLocation) { self.hide() }
+        }
+    }
 }
 
 private struct CaptureWaterfallView: View {
