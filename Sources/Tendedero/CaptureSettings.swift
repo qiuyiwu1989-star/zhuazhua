@@ -119,6 +119,7 @@ struct CaptureSettingsView: View {
     }
     private var about: some View {
         Form {
+            AppUpdateSettings()
             Section("爪爪 · 随手采集，慢慢整理") {
                 LabeledContent("版本", value: "\(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "开发版") (\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—"))")
                 Link("版本记录与下载", destination: URL(string: "https://github.com/qiuyiwu1989-star/zhuazhua/releases")!)
@@ -252,6 +253,7 @@ struct CaptureSettingsView: View {
     private var preferences: some View {
         Form {
             if model.page == 2 {
+            AppUpdateSettings()
             Section("系统") {
                 Toggle("登录时启动", isOn: $startup)
                 Text("修改后点击下方“应用设置”保存。").font(.caption).foregroundStyle(.secondary)

@@ -64,6 +64,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        AppUpdates.shared.start()
         if !UserDefaults.standard.bool(forKey: "scrollHistoryEnabled") {
             Line.keepOnLine = 100
         }
