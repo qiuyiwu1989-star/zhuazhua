@@ -177,6 +177,18 @@ struct CaptureSettingsView: View {
                 if !vault.connected {
                     Text("网页登录与采集设备授权是两种连接。登录原有工作区不会自动启用 COS 同步；本地采集仍可正常使用。").font(.callout).foregroundStyle(.secondary)
                 }
+                HStack {
+                    Button(vault.connected ? "导入其他连接…" : "连接此电脑…") { vault.importConnection() }
+                    if vault.connected {
+                        Button("验证连接") { vault.checkConnection() }
+                        Button("导出连接文件…") { vault.exportConnection() }
+                    }
+                    if vault.connecting { ProgressView().controlSize(.small) }
+                }.disabled(vault.connecting || vault.busy)
+                Text("新电脑：在已连接电脑导出连接文件，私密传输后在这里导入。当前服务使用共享同步凭据，网页登录不会自动授权设备。").font(.caption).foregroundStyle(.secondary)
+                if !vault.connectionMessage.isEmpty {
+                    Text(vault.connectionMessage).font(.callout).textSelection(.enabled)
+                }
                 Toggle("自动同步新采集和后续整理到知行档案", isOn: $vault.automatic).disabled(!vault.connected)
                 HStack {
                     Button("同步所有待同步图片") {

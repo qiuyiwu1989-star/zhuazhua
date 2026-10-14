@@ -13,6 +13,71 @@ final class VaultSync: ObservableObject {
         didSet { UserDefaults.standard.set(automatic, forKey: "vaultAutomatic") }
     }
     var connected: Bool { FileManager.default.fileExists(atPath: Self.tokenURL.path) }
+    @Published var connecting = false
+    @Published var connectionMessage = ""
+
+    /// Explicit file transfer for the current server's shared capture credential.
+    /// Never bundle the credential with the public application.
+    func importConnection() {
+        let panel = NSOpenPanel()
+        panel.title = "选择爪爪连接文件"
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        Task {
+            connecting = true
+            defer { connecting = false }
+            do {
+                let info = try url.resourceValues(forKeys: [.fileSizeKey])
+                guard (info.fileSize ?? 0) <= 4096 else { throw CaptureFailure(message: "连接文件格式不正确") }
+                let token = try String(contentsOf: url, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)
+                try await verify(token)
+                try FileManager.default.createDirectory(at: Self.tokenURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try Data(token.utf8).write(to: Self.tokenURL, options: .atomic)
+                try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: Self.tokenURL.path)
+                connectionMessage = "连接验证成功。现在可开启自动同步，或手动同步待同步图片。"
+            } catch { connectionMessage = "连接未完成：" + error.localizedDescription }
+        }
+    }
+    func checkConnection() {
+        Task {
+            connecting = true
+            defer { connecting = false }
+            do {
+                try await verify(String(contentsOf: Self.tokenURL, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines))
+                connectionMessage = "连接验证成功"
+            } catch { connectionMessage = "连接验证失败：" + error.localizedDescription }
+        }
+    }
+    private func verify(_ token: String) async throws {
+        guard !token.isEmpty, token.count <= 4096,
+              !token.contains(where: { $0.isWhitespace || $0.isNewline }) else {
+            throw CaptureFailure(message: "连接文件为空或格式不正确")
+        }
+        var request = URLRequest(url: URL(string: "https://qiuyiwu.com/api/zhuazhua/captures?limit=1")!, timeoutInterval: 15)
+        request.setValue("Bearer " + token, forHTTPHeaderField: "Authorization")
+        let (data, response) = try await session.data(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        if status == 401 || status == 403 { throw CaptureFailure(message: "连接凭据无效或已失效，请从已连接电脑重新导出") }
+        guard status == 200,
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              json["items"] is [[String: Any]] else {
+            throw CaptureFailure(message: "同步服务暂不可用（HTTP \(status)），请稍后重试")
+        }
+    }
+    func exportConnection() {
+        let panel = NSSavePanel()
+        panel.title = "导出爪爪连接文件"
+        panel.message = "连接文件允许访问你的采集库。仅通过私密方式传给自己的电脑，不要上传到公开位置。"
+        panel.nameFieldStringValue = "爪爪连接.zhuazhua-connection"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            let data = try Data(contentsOf: Self.tokenURL)
+            try data.write(to: url, options: .atomic)
+            try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+            connectionMessage = "已导出连接文件。在另一台电脑的“同步与存储”中导入即可；两台电脑共用此凭据。"
+        } catch { connectionMessage = "导出失败：" + error.localizedDescription }
+    }
     private var pending = Set<String>()
     private var completions: [String: (Bool) -> Void] = [:]
     private let redirects = CaptureRedirects()
