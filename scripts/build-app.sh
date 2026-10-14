@@ -6,7 +6,8 @@ cd "$(dirname "$0")/.."
 
 CONFIG="${1:-release}"
 APP="${APP_OUTPUT:-build/ZhuaZhua.app}"
-VERSION="0.1.0"
+source ./VERSION
+REVISION="$(git rev-parse --short=12 HEAD)"
 
 # Builds one architecture and prints the binary's path.
 # The Command Line Tools for macOS 27 ship an SDK whose SwiftUI needs a macro
@@ -35,6 +36,8 @@ BIN="$OUT/Tendedero"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/Tendedero"
+
+cp LICENSE "$APP/Contents/Resources/LICENSE"
 
 # Icon
 WORK="$(mktemp -d)"
@@ -68,7 +71,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleIconFile</key><string>Tendedero</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>${VERSION}</string>
-  <key>CFBundleVersion</key><string>6</string>
+  <key>CFBundleVersion</key><string>${BUILD_NUMBER}</string>
+  <key>ZhuaZhuaRevision</key><string>${REVISION}</string>
   <key>CFBundleDevelopmentRegion</key><string>en</string>
   <key>CFBundleLocalizations</key><array>${LANGUAGES}</array>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
@@ -88,7 +92,7 @@ PLIST
 # set), with the hardened runtime and a secure timestamp that notarization
 # requires. Without one, sign ad hoc so the app still runs locally.
 IDENTITY="${SIGN_IDENTITY:-$(security find-identity -v -p codesigning 2>/dev/null | awk -F'"' '/Developer ID Application/{print $2; exit}')}"
-if [ -n "$IDENTITY" ]; then
+if [ -n "$IDENTITY" ] && [ "$IDENTITY" != "-" ]; then
   codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP"
   echo "Signed with $IDENTITY"
 else

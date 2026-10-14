@@ -670,6 +670,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"
+        let versionItem = NSMenuItem(title: "爪爪 \(version) (\(build))", action: nil, keyEquivalent: "")
+        versionItem.isEnabled = false
+        menu.addItem(versionItem)
+        menu.addItem(ClosureMenuItem("版本与下载…") { NSWorkspace.shared.open(Self.updatesURL) })
+        menu.addItem(.separator())
 
         let toggleItem = ClosureMenuItem(isRevealed ? L("Hide line") : L("Show line")) { [weak self] in
             self?.toggle()
@@ -702,7 +709,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// tendedero.app with the running version, and the menus' language when
     /// the website has it too, so the page answers in the same words.
     private static var updatesURL: URL {
-        var components = URLComponents(string: "https://tendedero.app/")!
+        var components = URLComponents(string: "https://qiuyiwu.com/downloads/zhuazhua/")!
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
         var query = [URLQueryItem(name: "update", value: version)]
         if let language = Bundle.main.preferredLocalizations.first, ["en", "es", "gl", "fr", "pt-BR", "ja", "ko", "zh-Hans"].contains(language) {
