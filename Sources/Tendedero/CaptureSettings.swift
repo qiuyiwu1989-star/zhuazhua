@@ -11,17 +11,18 @@ final class CaptureSettings {
     var onFolder: (() -> Void)?
     private var window: NSWindow?
     private var loginWindow: NSWindow?
+    private lazy var loginModel = CaptureLoginModel()
     func show(collection: Bool = false, recordID: String? = nil) {
         onOpen?()
-        WebsiteCapture.shared.page = collection ? 0 : 1
+        WebsiteCapture.shared.page = collection ? 0 : 2
         if let recordID { WebsiteCapture.shared.selection = recordID }
         if window == nil {
             let view = CaptureSettingsView(model: .shared, initialCollection: collection)
-            let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 780, height: 620),
+            let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 980, height: 720),
                              styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
-            w.title = "爪爪"
+            w.title = "爪爪 · 设置"
             w.contentView = NSHostingView(rootView: view)
-            w.minSize = NSSize(width: 720, height: 540)
+            w.minSize = NSSize(width: 900, height: 600)
             w.isReleasedWhenClosed = false
             w.collectionBehavior = [.fullScreenAuxiliary, .moveToActiveSpace]
             w.center(); window = w
@@ -32,17 +33,16 @@ final class CaptureSettings {
     func hideForCapture() { window?.orderOut(nil); loginWindow?.orderOut(nil) }
     func login() {
         if loginWindow == nil {
-            let web = WKWebView(frame: .zero)
-            web.load(URLRequest(url: URL(string: "https://qiuyiwu.com/admin/login.html?next=/api/inside/whoami")!))
-            let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 620, height: 660),
+            let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 660, height: 740),
                              styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
-            w.title = "登录 qiuyiwu.com · 完成后关闭此窗口并读取工作区"
-            w.contentView = web; w.isReleasedWhenClosed = false
+            w.title = "登录 qiuyiwu.com"
+            w.contentView = NSHostingView(rootView: CaptureLoginView(model: loginModel))
+            w.isReleasedWhenClosed = false
+            w.delegate = loginModel
             w.collectionBehavior = [.fullScreenAuxiliary, .moveToActiveSpace]
             w.center(); loginWindow = w
-        } else if let web = loginWindow?.contentView as? WKWebView {
-            web.load(URLRequest(url: URL(string: "https://qiuyiwu.com/admin/login.html?next=/api/inside/whoami")!))
         }
+        loginModel.load()
         NSApp.activate(ignoringOtherApps: true); loginWindow?.makeKeyAndOrderFront(nil)
     }
 }
@@ -66,28 +66,38 @@ struct CaptureSettingsView: View {
     @State private var startup = SMAppService.mainApp.status == .enabled
     @State private var settingsMessage = ""
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Image(systemName: "tray.and.arrow.down.fill").font(.title).foregroundStyle(.teal)
-                VStack(alignment: .leading) {
-                    Text("爪爪").font(.title2.bold())
-
-                    Text("桌面暂存，保存到你的 qiuyiwu.com 工作区").foregroundStyle(.secondary)
-                }
-                Spacer()
-                Button("打开本地原件") { NSWorkspace.shared.open(WebsiteCapture.directory) }
-            }
-            Picker("页面", selection: $model.page) {
-                Text("采集记录").tag(0); Text("网站与工作区").tag(1); Text("常规设置").tag(2); Text("快捷键").tag(3)
-            }.pickerStyle(.segmented)
-            if model.page == 0 { collection }
-            else if model.page == 1 { website }
-            else if model.page == 2 { preferences }
-            else { shortcutSettings }
+        HStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 18) {
+                Label("爪爪", systemImage: "pawprint.fill").font(.title2.bold()).padding(.horizontal, 12)
+                List(selection: $model.page) {
+                    Section("设置") {
+                        Label("通用", systemImage: "gearshape").tag(2)
+                        Label("采集与显示", systemImage: "rectangle.topthird.inset.filled").tag(4)
+                        Label("同步与存储", systemImage: "icloud").tag(1)
+                        Label("快捷键", systemImage: "keyboard").tag(3)
+                    }
+                    Section("管理") {
+                        Label("采集记录", systemImage: "tray.full").tag(0)
+                        Label("关于", systemImage: "info.circle").tag(5)
+                    }
+                }.listStyle(.sidebar)
+                Text("图片和笔记先保存在本机").font(.caption).foregroundStyle(.secondary).padding(12)
+            }.padding(.top, 20).frame(width: 200)
+                .background(Color(nsColor: .windowBackgroundColor))
             Divider()
-            Text(model.message).font(.callout).foregroundStyle(.secondary).textSelection(.enabled)
+            VStack(alignment: .leading, spacing: 14) {
+                Text(pageTitle).font(.system(size: 25, weight: .bold))
+                if model.page == 0 { collection }
+                else if model.page == 1 { website }
+                else if model.page == 2 || model.page == 4 { preferences }
+                else if model.page == 3 { ScrollView { shortcutSettings } }
+                else { about }
+                if model.page == 0 || model.page == 1 {
+                    Divider()
+                    Text(model.message).font(.callout).foregroundStyle(.secondary).textSelection(.enabled)
+                }
+            }.padding(24).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        .padding(22)
         .onAppear {
             let r = model.records.first { $0.id == model.selection }
             note = r?.note ?? ""; tags = r?.tags ?? ""
@@ -96,6 +106,26 @@ struct CaptureSettingsView: View {
             let r = model.records.first { $0.id == id }
             note = r?.note ?? ""; tags = r?.tags ?? ""
         }
+    }
+    private var pageTitle: String {
+        switch model.page {
+        case 0: "采集记录"
+        case 1: "同步与存储"
+        case 3: "快捷键"
+        case 4: "采集与显示"
+        case 5: "关于爪爪"
+        default: "通用"
+        }
+    }
+    private var about: some View {
+        Form {
+            Section("爪爪 · 随手采集，慢慢整理") {
+                LabeledContent("版本", value: "\(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "开发版") (\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—"))")
+                Link("版本记录与下载", destination: URL(string: "https://github.com/qiuyiwu1989-star/zhuazhua/releases")!)
+                Link("开源代码与问题反馈", destination: URL(string: "https://github.com/qiuyiwu1989-star/zhuazhua")!)
+                Text("基于 Tendedero 改造 · MIT 许可").foregroundStyle(.secondary)
+            }
+        }.formStyle(.grouped)
     }
     private var collection: some View {
         HStack(alignment: .top, spacing: 18) {
@@ -143,7 +173,10 @@ struct CaptureSettingsView: View {
     private var website: some View {
         Form {
             Section("知行档案 · 爪爪收件箱") {
-                Text(vault.connected ? "设备已连接 · 原图保存到 COS" : "设备尚未连接")
+                Label(vault.connected ? "设备已连接 · 原图保存到 COS" : "此电脑尚未连接", systemImage: vault.connected ? "checkmark.circle.fill" : "circle.dashed")
+                if !vault.connected {
+                    Text("网页登录与采集设备授权是两种连接。登录原有工作区不会自动启用 COS 同步；本地采集仍可正常使用。").font(.callout).foregroundStyle(.secondary)
+                }
                 Toggle("自动同步新采集和后续整理到知行档案", isOn: $vault.automatic).disabled(!vault.connected)
                 HStack {
                     Button("同步所有待同步图片") {
@@ -206,10 +239,21 @@ struct CaptureSettingsView: View {
 
     private var preferences: some View {
         Form {
+            if model.page == 2 {
+            Section("系统") {
+                Toggle("登录时启动", isOn: $startup)
+                Text("修改后点击下方“应用设置”保存。").font(.caption).foregroundStyle(.secondary)
+            }
+            Section("本地数据") {
+                Button("打开本地原件与笔记目录") { NSWorkspace.shared.open(WebsiteCapture.directory) }
+                Text("本地采集不依赖网站登录；换电脑后需单独配置连接。").font(.caption).foregroundStyle(.secondary)
+            }
             Section("体验改进") {
                 Toggle("发送匿名使用计数", isOn: $events.enabled)
                 Text("默认关闭。仅统计笔记打开、导入和同步结果，不发送正文、图片、路径、来源或搜索词。").font(.caption).foregroundStyle(.secondary)
             }
+            }
+            if model.page == 4 {
             Section("采集") {
                 Toggle("接管系统截图保存位置", isOn: $inbox)
                 Toggle("收集剪贴板中的图片", isOn: $clipboard)
@@ -236,7 +280,7 @@ struct CaptureSettingsView: View {
                     Text("适应屏幕").tag(0)
                     ForEach(Line.keepChoices, id: \.self) { Text("\($0) 张").tag($0) }
                 }
-                Toggle("开机启动", isOn: $startup)
+            }
             }
             Button("应用设置") {
                 Inbox.isEnabled = inbox; ClipboardWatcher.isEnabled = clipboard

@@ -187,6 +187,7 @@ final class WebsiteCapture: ObservableObject {
             ($0.expiresDate == nil || $0.expiresDate! > Date()) && url.path.hasPrefix($0.path)
         }
         var req = URLRequest(url: url)
+        if method == "GET" { req.timeoutInterval = 15 }
         req.httpMethod = method; req.httpBody = body
         req.setValue(contentType, forHTTPHeaderField: "Content-Type")
         req.setValue("application/json", forHTTPHeaderField: "Accept")
