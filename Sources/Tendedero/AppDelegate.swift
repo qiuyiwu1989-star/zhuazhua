@@ -180,7 +180,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        showLineForOpen()
+        CaptureSettings.shared.show()
+        NSApp.activate(ignoringOtherApps: true)
         return false
     }
 
@@ -648,7 +649,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // MARK: Menu bar
 
     private func setUpStatusItem() {
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        setUpApplicationMenu()
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         updateStatusIcon()
         let menu = NSMenu()
         // Items say themselves whether they can be used, like Take everything
@@ -665,8 +667,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let description = on ? "爪爪 · 剪贴板收集中" : "爪爪"
         let image = NSImage(systemSymbolName: on ? "pawprint.fill" : "pawprint", accessibilityDescription: description)
         image?.isTemplate = true
+        statusItem.button?.title = " 爪爪"
+        statusItem.button?.imagePosition = .imageLeading
         statusItem.button?.image = image
         statusItem.button?.toolTip = description
+    }
+
+    private func setUpApplicationMenu() {
+        let main = NSMenu()
+        let appItem = NSMenuItem()
+        main.addItem(appItem)
+        let application = NSMenu(title: "爪爪")
+        application.addItem(ClosureMenuItem("设置…", key: ",") { CaptureSettings.shared.show() })
+        application.addItem(ClosureMenuItem("搜索与整理…") { CaptureDrawer.shared.show() })
+        application.addItem(.separator())
+        application.addItem(NSMenuItem(title: "隐藏爪爪", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h"))
+        application.addItem(.separator())
+        application.addItem(ClosureMenuItem("退出爪爪", key: "q") { NSApp.terminate(nil) })
+        appItem.submenu = application
+        let editItem = NSMenuItem(title: "编辑", action: nil, keyEquivalent: "")
+        let edit = NSMenu(title: "编辑")
+        for (title, action, key) in [("撤销", "undo:", "z"), ("剪切", "cut:", "x"), ("复制", "copy:", "c"), ("粘贴", "paste:", "v"), ("全选", "selectAll:", "a")] {
+            edit.addItem(NSMenuItem(title: title, action: NSSelectorFromString(action), keyEquivalent: key))
+        }
+        editItem.submenu = edit
+        main.addItem(editItem)
+        NSApp.mainMenu = main
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {
