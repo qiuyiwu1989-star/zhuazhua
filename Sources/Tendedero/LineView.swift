@@ -76,7 +76,7 @@ struct LineView: View {
                     }
                     .disabled(line.scroll >= CGFloat(max(0, line.items.count - line.visibleCount)) * Layout.spacing)
                     Button { CaptureDrawer.shared.show() } label: { Label("搜索与整理", systemImage: "magnifyingglass") }
-                    }.frame(width: 170)
+                    }.frame(width: 200)
                     Rectangle().fill(Color.white.opacity(0.18)).frame(width: 1, height: 24)
                     HStack(spacing: 7) {
                         Image(systemName: "plus").font(.system(size: 23, weight: .medium))
@@ -97,7 +97,14 @@ struct LineView: View {
                         Label("更新", systemImage: "chevron.right")
                     }
                     .disabled(line.scroll <= 0)
-                    }.frame(width: 170)
+                    Button { CaptureSettings.shared.show() } label: {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 15, weight: .medium))
+                            .frame(width: 24, height: 24)
+                    }
+                    .help("设置 · 快捷键、采集与同步")
+                    .accessibilityLabel("设置")
+                    }.frame(width: 200)
                 }
                 .font(.system(size: 12, weight: .semibold))
                 .buttonStyle(CaptureDockButtonStyle())
