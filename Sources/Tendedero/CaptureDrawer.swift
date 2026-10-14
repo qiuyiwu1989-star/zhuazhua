@@ -141,6 +141,15 @@ struct CaptureDrawerView: View {
                             }
                             .padding(organizing ? 10 : 0).background(selected.contains(record.id) ? Color.accentColor.opacity(0.12) : Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10))
                             .contextMenu {
+                                Button {
+                                    NSWorkspace.shared.open(URL(fileURLWithPath: record.file))
+                                } label: { Label("打开原图", systemImage: "arrow.up.right.square") }
+                                .disabled(!FileManager.default.fileExists(atPath: record.file))
+                                Button {
+                                    NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: record.file)])
+                                } label: { Label("在 Finder 中显示", systemImage: "folder") }
+                                .disabled(!FileManager.default.fileExists(atPath: record.file))
+                                Divider()
                                 Button(record.vaultSyncedAt == nil ? "同步到知行档案" : "重新同步到知行档案") { vault.enqueue([record.id], model: model) }
                                 if let error = record.vaultError { Text("同步失败：" + error) }
                                 Button("重新识别文字") { model.recognize(record.id) }
